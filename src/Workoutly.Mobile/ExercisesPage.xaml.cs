@@ -1,4 +1,4 @@
-using System.Globalization;
+using Workoutly.Mobile.ViewModels;
 using Workoutly.Mobile.Services;
 
 namespace Workoutly.Mobile;
@@ -6,14 +6,14 @@ namespace Workoutly.Mobile;
 public partial class ExercisesPage : ContentPage
 {
     private readonly AccountClient _accounts;
-    private ExerciseItem[] _exercises = [];
+    private readonly CatalogViewModel _model;
     private bool _busy;
     private bool _opening;
 
     public ExercisesPage(AccountClient accounts)
     {
         InitializeComponent();
-        _accounts = accounts;
+        _accounts = accounts; BindingContext = _model = new(accounts);
     }
 
     protected override async void OnAppearing()
@@ -27,22 +27,21 @@ public partial class ExercisesPage : ContentPage
         if (_busy) return;
         SetBusy(true);
         ErrorText.IsVisible = false;
-        _exercises = []; ExerciseList.ItemsSource = null; ExerciseList.IsVisible = false;
+        ExerciseList.IsVisible = false;
         StatusText.Text = "Carregando exercícios…";
         try
         {
-            _exercises = await _accounts.GetExercisesAsync();
-            ApplyFilter();
+            await _model.LoadAsync();
+            StatusText.Text = "Toque em um exercício para ver os detalhes.";
             ExerciseList.IsVisible = true; RefreshButton.Text = "Atualizar";
         }
         catch (SessionExpiredException exception)
         {
-            _exercises = [];
-            ApplyFilter();
+
             await DisplayAlertAsync("Acesso", exception.Message, "OK");
             await Navigation.PopToRootAsync();
         }
-        catch (AccountException exception)
+        catch (Exception exception) when (exception is AccountException or SQLite.SQLiteException or IOException)
         {
             ErrorText.Text = exception.Message;
             ErrorText.IsVisible = true;
@@ -51,18 +50,6 @@ public partial class ExercisesPage : ContentPage
         finally { SetBusy(false); }
     }
 
-    private void ApplyFilter()
-    {
-        var query = Search.Text?.Trim() ?? string.Empty;
-        var filtered = _exercises.Where(item => (!OnlyMine.IsToggled || item.IsMine) &&
-            (CultureInfo.CurrentCulture.CompareInfo.IndexOf($"{item.Name} {item.MuscleGroup} {item.Equipment}", query,
-                CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0)).ToArray();
-        ExerciseList.ItemsSource = filtered;
-        StatusText.Text = $"{filtered.Length} exercício(s) • toque para ver detalhes";
-    }
-
-    private void OnSearch(object? sender, TextChangedEventArgs args) => ApplyFilter();
-    private void OnFilter(object? sender, ToggledEventArgs args) => ApplyFilter();
     private async void OnRefresh(object? sender, EventArgs args) => await LoadAsync();
 
     private async void OnCreate(object? sender, EventArgs args)
@@ -73,9 +60,18 @@ public partial class ExercisesPage : ContentPage
         finally { _opening = false; }
     }
 
+    private async void OnDetails(object? sender, EventArgs args)
+    {
+        if (sender is Button { CommandParameter: ExerciseItem item }) await OpenDetails(item);
+    }
     private async void OnSelected(object? sender, SelectionChangedEventArgs args)
     {
-        if (_busy || _opening || args.CurrentSelection.FirstOrDefault() is not ExerciseItem item) return;
+        if (args.CurrentSelection.FirstOrDefault() is ExerciseItem item) await OpenDetails(item);
+    }
+
+    private async Task OpenDetails(ExerciseItem item)
+    {
+        if (_busy || _opening) return;
         _opening = true;
         ExerciseList.SelectedItem = null;
         try { await Navigation.PushAsync(new ExercisePage(_accounts, item)); }

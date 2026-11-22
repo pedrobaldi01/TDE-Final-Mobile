@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Workoutly.Mobile.PlanPage" Title="Ficha de treino">
+             xmlns:vm="clr-namespace:Workoutly.Mobile.ViewModels" x:DataType="vm:PlanEditorViewModel" x:Class="Workoutly.Mobile.PlanPage" Title="Ficha de treino">
     <ScrollView x:Name="PageScroll">
         <VerticalStackLayout Padding="20,16" Spacing="14" MaximumWidthRequest="600">
             <Label Text="PLANEJAMENTO" Style="{StaticResource Eyebrow}" />
@@ -10,18 +10,44 @@
                 <Border Style="{StaticResource InputBorder}">
                     <VerticalStackLayout Spacing="0">
                         <Label Text="Nome da ficha" Style="{StaticResource FieldLabel}" />
-                        <Entry x:Name="NameEntry" Placeholder="Ex.: Treino A — Peito e tríceps" MaxLength="120" AutomationId="plan_name" />
+                        <Entry Text="{Binding Name, Mode=TwoWay}" Placeholder="Ex.: Treino A — Peito e tríceps" MaxLength="120" AutomationId="plan_name" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Style="{StaticResource InputBorder}">
                     <VerticalStackLayout Spacing="6">
                         <Label Text="Observações (opcional)" Style="{StaticResource FieldLabel}" />
-                        <Editor x:Name="NotesEntry" Placeholder="Orientações para este planejamento" MaxLength="1000" AutoSize="TextChanges" MinimumHeightRequest="65" AutomationId="plan_notes" />
+                        <Editor Text="{Binding Notes, Mode=TwoWay}" Placeholder="Orientações para este planejamento" MaxLength="1000" AutoSize="TextChanges" MinimumHeightRequest="65" AutomationId="plan_notes" />
                     </VerticalStackLayout>
                 </Border>
-                <Label x:Name="CountText" Text="Exercícios (0)" FontFamily="InterSemiBold" FontSize="18" />
-                <Label Text="Adicione um exercício para definir as metas da ficha. Os campos permanecem nesta tela se o envio falhar." Style="{StaticResource SecondaryText}" />
-                <VerticalStackLayout x:Name="ItemsPanel" Spacing="12" />
+                <HorizontalStackLayout x:Name="FavoritePanel" Spacing="8">
+                    <CheckBox IsChecked="{Binding Favorite, Mode=TwoWay}" />
+                    <Label Text="Favorito · aparece primeiro na lista" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Button x:Name="UseTemplate" Text="Usar modelo nesta ficha" Clicked="OnUseTemplate" Style="{StaticResource SecondaryButton}" />
+                <Label Text="{Binding Items.Count, StringFormat='Exercícios ({0})'}" Style="{StaticResource Eyebrow}" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Items}" Spacing="12">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ExerciseFields">
+                            <Border Style="{StaticResource SurfaceCard}">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="{Binding Exercise.Name}" FontFamily="InterBold" FontSize="18" />
+                                    <Label Text="{Binding Exercise.MuscleGroup}" Style="{StaticResource SecondaryText}" />
+                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                        <Label Text="Séries" /><Label Grid.Column="1" Text="Repetições" /><Label Grid.Column="2" Text="Carga (kg)" />
+                                        <Entry Grid.Row="1" AutomationId="item_sets" Text="{Binding Sets, Mode=TwoWay}" Keyboard="Numeric" MaxLength="2" />
+                                        <Entry Grid.Row="1" Grid.Column="1" AutomationId="item_reps" Text="{Binding Repetitions, Mode=TwoWay}" Keyboard="Numeric" MaxLength="3" />
+                                        <Entry Grid.Row="1" Grid.Column="2" AutomationId="item_weight" Text="{Binding Weight, Mode=TwoWay}" Keyboard="Numeric" Placeholder="Opcional" MaxLength="7" />
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <Button Text="Subir" Clicked="OnItemAction" Style="{StaticResource TextButton}" />
+                                        <Button Grid.Column="1" Text="Descer" Clicked="OnItemAction" Style="{StaticResource TextButton}" />
+                                        <Button Grid.Column="2" Text="Remover" Clicked="OnItemAction" Style="{StaticResource TextButton}" />
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
                 <Button Text="Adicionar exercício" Clicked="OnAdd" Style="{StaticResource SecondaryButton}" AutomationId="plan_add_exercise" />
                 <Label x:Name="ErrorText" TextColor="{StaticResource Error}" IsVisible="False" AutomationId="plan_error" />
                 <Button x:Name="SaveButton" Text="Salvar ficha" Clicked="OnSave" AutomationId="plan_save" />

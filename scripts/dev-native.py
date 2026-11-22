@@ -76,8 +76,8 @@ def main():
                 subprocess.run([dotnet, str(dll), "--migrate"], cwd=ROOT, env=environment, check=True)
                 runtime_file.write_text(json.dumps({"socket": str(socket)}), encoding="utf-8")
                 runtime_file.chmod(0o600)
-                api = subprocess.Popen([dotnet, str(dll), "--urls", "http://localhost:5080"], cwd=ROOT, env=environment)
-                print("Workoutly disponível em http://localhost:5080. Ctrl+C encerra os serviços e preserva os dados em .local/.", flush=True)
+                api = subprocess.Popen([dotnet, str(dll), "--urls", "http://localhost:5186"], cwd=ROOT, env=environment)
+                print("Workoutly disponível em http://localhost:5186. Ctrl+C encerra os serviços e preserva os dados em .local/.", flush=True)
                 return api.wait()
             except KeyboardInterrupt:
                 print("\nEncerrando serviços; dados preservados.", flush=True)

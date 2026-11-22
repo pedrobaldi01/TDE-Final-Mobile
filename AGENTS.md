@@ -33,3 +33,7 @@
 - Usar tdd para regras e contratos novos quando houver comportamento a testar; diagnosing-bugs para falhas difíceis; code-review para revisão solicitada.
 - diagram-design para visuais que ajudem a explicar o sistema; definir o perfil visual antes do primeiro diagrama.
 - Usar subagentes quando solicitado ou quando as instruções da skill aplicada exigirem delegação.
+
+## Cópia independente da disciplina Mobile
+
+Os acordos anteriores documentam a origem PI. Na branch trabalho-final-mobile, os modelos são locais em SQLite e a conta define o arquivo por aparelho. Fichas publicadas, vínculos e histórico passam pela API. Consulte primeiro README.md e docs/mobile-final/Requisitos.md para o fluxo atual. Somente use a API de demonstração para testes com gravação.

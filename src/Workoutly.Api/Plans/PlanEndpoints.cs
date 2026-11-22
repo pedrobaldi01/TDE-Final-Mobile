@@ -62,7 +62,8 @@ public static class PlanEndpoints
         var errors = new Dictionary<string, string[]>();
         if (string.IsNullOrWhiteSpace(name) || name.Trim().Length is < 2 or > 120) errors["name"] = ["Informe um nome entre 2 e 120 caracteres."];
         if (notes?.Trim().Length > 1000) errors["notes"] = ["Use até 1000 caracteres nas observações."];
-        if (exercises is null || exercises.Length is < 1 or > 50 || exercises.Any(e => e is null || e.ExerciseId == Guid.Empty || e.Sets is < 1 or > 20 || e.Repetitions is < 1 or > 200) || exercises.Select(e => e.ExerciseId).Distinct().Count() != exercises.Length)
+        if (exercises is null || exercises.Length is < 1 or > 50 || exercises.Any(e => e is null || e.ExerciseId == Guid.Empty || e.Sets is < 1 or > 20 || e.Repetitions is < 1 or > 200 ||
+            e.SuggestedWeightKg is decimal kg && (kg is < 0 or > 2000 || decimal.Round(kg, 2) != kg)) || exercises.Select(e => e.ExerciseId).Distinct().Count() != exercises.Length)
             errors["exercises"] = ["Inclua de 1 a 50 exercícios distintos, com 1 a 20 séries e 1 a 200 repetições cada."];
         return errors;
     }

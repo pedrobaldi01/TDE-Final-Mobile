@@ -27,15 +27,19 @@ public partial class MainPage : ContentPage
     {
         if (_busy) return;
         SetBusy(true);
-        ErrorText.IsVisible = RetryAccessButton.IsVisible = false;
+        ErrorText.IsVisible = RetryAccessButton.IsVisible = OfflineModels.IsVisible = false;
         try
         {
             var profile = await _accounts.RestoreAsync();
             if (profile is not null) ShowAccount(profile);
             else ShowSignedOut();
         }
-        catch (AccountException exception) { ShowError(exception.Message); RetryAccessButton.IsVisible = true; }
+        catch (AccountException exception) { ShowError(exception.Message); RetryAccessButton.IsVisible = true; OfflineModels.IsVisible = _accounts.CanOpenLocalTemplates; }
         finally { SetBusy(false); }
+    }
+    private async void OnOfflineModels(object? sender, EventArgs args)
+    {
+        if (_accounts.CanOpenLocalTemplates) await OpenAsync(() => new PlansPage(_accounts, local: true));
     }
     private async void OnRetryAccess(object? sender, EventArgs args) => await RestoreAccessAsync();
 
@@ -61,9 +65,7 @@ public partial class MainPage : ContentPage
         finally { SetBusy(false); }
     }
 
-    private void OnChooseStudent(object? sender, EventArgs args) => BeginAccess("student");
-
-    private void OnChooseTeacher(object? sender, EventArgs args) => BeginAccess("teacher");
+    private void OnChooseRole(object? sender, EventArgs args) => BeginAccess(StudentRole.IsChecked ? "student" : "teacher");
 
     private void BeginAccess(string role)
     {
@@ -110,7 +112,10 @@ public partial class MainPage : ContentPage
 
     private void ShowAccount(AccountProfile profile)
     {
+        OfflineModels.IsVisible = false;
         _profile = profile;
+        Shell.SetNavBarIsVisible(this, true);
+        ((AppShell)Shell.Current).OpenWorkspace(_accounts, profile);
         RetryAccessButton.IsVisible = false;
         AccountName.Text = profile.Name;
         AccountEmail.Text = profile.Email;
@@ -146,6 +151,7 @@ public partial class MainPage : ContentPage
 
     private void ShowSignedOut()
     {
+        OfflineModels.IsVisible = false;
         _profile = null;
         _selectedRole = null;
         _registering = false;

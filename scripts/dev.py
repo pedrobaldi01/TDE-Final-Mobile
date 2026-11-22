@@ -24,9 +24,9 @@ def main():
     if command == "init":
         password, root_password = secrets.token_hex(24), secrets.token_hex(24)
         content = (
-            "MYSQL_PORT=3307\nMYSQL_DATABASE=workoutly\nMYSQL_USER=workoutly\n"
+            "MYSQL_PORT=3317\nMYSQL_DATABASE=workoutly\nMYSQL_USER=workoutly\n"
             f"MYSQL_PASSWORD={password}\nMYSQL_ROOT_PASSWORD={root_password}\n"
-            "ConnectionStrings__Workoutly=Server=127.0.0.1;Port=3307;Database=workoutly;"
+            "ConnectionStrings__Workoutly=Server=127.0.0.1;Port=3317;Database=workoutly;"
             f"User ID=workoutly;Password={password};SslMode=Required\n"
         )
         try:
@@ -48,7 +48,7 @@ def main():
                 values[key.strip()] = value.strip()
     environment = os.environ.copy()
     environment.setdefault("ASPNETCORE_ENVIRONMENT", "Development")
-    connection = environment.get("ConnectionStrings__Workoutly") or values.get("ConnectionStrings__Workoutly")
+    connection = values.get("ConnectionStrings__Workoutly") or environment.get("ConnectionStrings__Workoutly")
     if arguments.native:
         runtime = ROOT / ".local/native-mysql/runtime.json"
         if not runtime.exists():
@@ -84,7 +84,7 @@ def main():
                 environment["TeacherSetup__Password"] = password
             arguments += ["--", "--create-teacher"]
         else:
-            arguments += ["--", "--migrate"] if command == "migrate" else ["--urls", "http://localhost:5080"]
+            arguments += ["--", "--migrate"] if command == "migrate" else ["--urls", "http://localhost:5186"]
     else:
         if not environment.get("WORKOUTLY_TEST_ADMIN_CONNECTION"):
             # Credencial administrativa apenas para o MySQL local e para bases aleatórias de teste.
@@ -92,7 +92,7 @@ def main():
             if not password:
                 print("Prepare o .env ou defina WORKOUTLY_TEST_ADMIN_CONNECTION de um MySQL de testes isolado.", file=sys.stderr)
                 return 1
-            port = values.get("MYSQL_PORT", "3307")
+            port = values.get("MYSQL_PORT", "3317")
             environment["WORKOUTLY_TEST_ADMIN_CONNECTION"] = (
                 f"Server=127.0.0.1;Port={port};User ID=root;Password={password};SslMode=Required"
             )

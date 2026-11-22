@@ -4,6 +4,7 @@
     <Project Path="src/Workoutly.Mobile/Workoutly.Mobile.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Workoutly.Local.Tests/Workoutly.Local.Tests.csproj" />
     <Project Path="tests/Workoutly.Api.Tests/Workoutly.Api.Tests.csproj" />
   </Folder>
 </Solution>

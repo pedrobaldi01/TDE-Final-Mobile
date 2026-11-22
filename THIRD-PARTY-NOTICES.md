@@ -45,3 +45,9 @@ O Workout Guide registra que parte das primeiras poses deriva de [Everkinetic](h
 | `front_raise.svg` | [`assets/front-raise/frame-1.svg`](https://github.com/bryllim/workout-guide/blob/main/packages/workout-guide/assets/front-raise/frame-1.svg) |
 
 Os 20 novos arquivos foram incorporados sem alterações. O ícone `exercise_generic.svg` é um recurso vetorial original do Workoutly e não representa um movimento específico.
+
+## Trabalho Final Mobile
+
+A cópia deriva do código de pedrobaldi01/Workoutly (45d880a). A integração da API também consultou JoaoAza/Workoutly-API (c7835b3). Os créditos de design, imagens e fontes do PI permanecem acima.
+
+O DAO usa sqlite-net-pcl 1.11.285, de Frank A. Krueger e colaboradores (MIT, docs/licenses/SQLite-net-LICENSE.txt). As dependências transitivas são restauradas pelo NuGet com seus metadados de licença.

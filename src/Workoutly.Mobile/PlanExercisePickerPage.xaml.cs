@@ -1,61 +1,47 @@
-using System.Globalization;
+using Workoutly.Mobile.ViewModels;
 using Workoutly.Mobile.Services;
 namespace Workoutly.Mobile;
 
 public partial class PlanExercisePickerPage : ContentPage
 {
     private readonly AccountClient _accounts;
-    private readonly HashSet<string> _selected;
     private readonly Action<ExerciseItem> _onSelect;
-    private ExerciseItem[] _exercises = [];
+    private readonly CatalogViewModel _model;
     private bool _busy;
-    public PlanExercisePickerPage(AccountClient accounts, HashSet<string> selected, Action<ExerciseItem> onSelect)
+    public PlanExercisePickerPage(AccountClient accounts, HashSet<string> selected, Action<ExerciseItem> onSelect, bool local = false)
     {
-        InitializeComponent(); _accounts = accounts; _selected = selected; _onSelect = onSelect;
+        InitializeComponent(); _accounts = accounts; BindingContext = _model = new(accounts, selected, local); _onSelect = onSelect;
     }
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
     private async Task LoadAsync()
     {
         if (_busy) return;
         SetBusy(true); ErrorText.IsVisible = false;
-        _exercises = []; ExerciseList.ItemsSource = null; ExerciseList.IsVisible = false;
+        ExerciseList.IsVisible = false;
         ListStatus.Text = "Carregando exercícios…";
         try
         {
-            _exercises = await _accounts.GetExercisesAsync(); ApplyFilter(); ExerciseList.IsVisible = true;
+            await _model.LoadAsync(); ExerciseList.IsVisible = true;
             RefreshButton.Text = "Atualizar"; ListStatus.Text = "Toque para incluir. Exercícios já adicionados ficam ocultos.";
         }
         catch (SessionExpiredException exception)
         {
-            await DisplayAlertAsync("Acesso", exception.Message, "OK"); await Navigation.PopToRootAsync();
+            await DisplayAlertAsync("Acesso", exception.Message, "OK"); await Navigation.PopModalAsync();
         }
-        catch (AccountException exception)
+        catch (Exception exception) when (exception is AccountException or SQLite.SQLiteException or IOException)
         {
             ErrorText.Text = exception.Message; ErrorText.IsVisible = true;
             ListStatus.Text = "Lista não carregada."; RefreshButton.Text = "Tentar novamente";
         }
         finally { SetBusy(false); }
     }
-    private void ApplyFilter()
-    {
-        var query = Search.Text?.Trim() ?? string.Empty;
-        ExerciseList.ItemsSource = _exercises.Where(e => !_selected.Contains(e.Id) &&
-            CultureInfo.CurrentCulture.CompareInfo.IndexOf($"{e.Name} {e.MuscleGroup} {e.Equipment}", query, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0).ToArray();
-    }
-    private void OnSearch(object? sender, TextChangedEventArgs args) => ApplyFilter();
     private async void OnRefresh(object? sender, EventArgs args) => await LoadAsync();
-    private async void OnCreate(object? sender, EventArgs args)
+    private async void OnCancel(object? sender, EventArgs args) => await Navigation.PopModalAsync();
+    private async void OnInclude(object? sender, EventArgs args)
     {
-        if (_busy) return;
+        if (_busy || sender is not Button { CommandParameter: ExerciseItem item }) return;
         SetBusy(true);
-        try { await Navigation.PushAsync(new ExercisePage(_accounts)); }
-        finally { SetBusy(false); }
-    }
-    private async void OnSelected(object? sender, SelectionChangedEventArgs args)
-    {
-        if (_busy || args.CurrentSelection.FirstOrDefault() is not ExerciseItem item) return;
-        SetBusy(true);
-        try { _onSelect(item); await Navigation.PopAsync(); }
+        try { _onSelect(item); await Navigation.PopModalAsync(); }
         finally { SetBusy(false); }
     }
     private void SetBusy(bool busy)

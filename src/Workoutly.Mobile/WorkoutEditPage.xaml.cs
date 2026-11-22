@@ -97,11 +97,7 @@ public partial class WorkoutEditPage : ContentPage, IConfirmLeave
             var sets = new List<WorkoutSetItem>();
             foreach (var row in exercise.Sets)
             {
-                if (!int.TryParse(row.Repetitions.Text, out var reps) || reps is < 1 or > 200 ||
-                    !decimal.TryParse(row.Weight.Text?.Trim().Replace(',', '.'), NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var weight) ||
-                    weight is < 0 or > 2000 || decimal.Round(weight, 2) != weight)
-                    throw new AccountException($"Revise as séries de {exercise.Item.Name}: 1 a 200 repetições e 0 a 2000 kg, com até duas casas decimais. Remova séries vazias que não foram realizadas.");
-                sets.Add(new(reps, weight));
+                sets.Add(WorkoutSetItem.FromFields(row.Repetitions.Text, row.Weight.Text, exercise.Item.Name));
             }
             if (sets.Count > 0) exercises.Add(new(exercise.Item.ExerciseId, sets.ToArray()));
         }

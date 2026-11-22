@@ -1,112 +1,61 @@
-# Workoutly
+# Workoutly · Trabalho Final de Desenvolvimento Mobile
 
-Aplicativo acadêmico de acompanhamento de treinos, criado do zero para o Projeto Integrador 6.
+Abra **Workoutly.slnx** no Rider ou Visual Studio e selecione **Workoutly.Mobile** como projeto de inicialização. Extraia o ZIP inteiro antes de abrir a solução.
 
-## Situação atual
+O professor vincula alunos e publica fichas. O aluno registra o treino e ambos consultam o histórico. A aba **Modelos** guarda planejamentos reutilizáveis no próprio aparelho. O envio ao aluno acontece quando o professor abre uma ficha, escolhe um modelo e toca em **Salvar ficha**.
 
-O [balanço de aderência aos roteiros e à Fase 2](docs/situacao-atual-e-aderencia-fase-2.md) consolida o que já foi implementado, as evidências disponíveis e as pendências técnicas e acadêmicas da versão 0.11.0. Inclui a comparação por seção do relatório e um plano de fechamento sem modificar as entregas originais.
+## Executar
 
-O app já permite **cadastro, login, recuperação de sessão, logout e catálogo de exercícios**, integrado à API e ao MySQL. Há 30 exercícios compartilhados ilustrados e cadastro de exercícios privados da conta, com busca e detalhes. A sessão fica no armazenamento seguro do aparelho e é revogada no servidor ao sair. Fichas já permitem criar, consultar, editar, ordenar exercícios e excluir com revisões preservadas. O aluno também registra séries realizadas, cargas, duração e observações e recupera seus treinos salvos. Correção dos registros próprios já está disponível em Histórico e evolução → Ver treino → Corrigir treino, com totais recalculados. Histórico por período, frequência, volume e evolução de carga estão disponíveis; o professor consulta somente alunos vinculados. A experiência de uso já inclui confirmação ao sair de formulários alterados, recuperação de acesso e distinção entre falha de carregamento e listas vazias. A validação multiplataforma e a avaliação final do MVP permanecem pendentes.
-
-Nenhum código do aplicativo anterior foi reutilizado. Os roteiros enviados ao professor permanecem na pasta superior, sem alterações.
-
-A interface segue a identidade visual do Figma do grupo: fundo escuro, verde-lima, detalhes turquesa, fonte Inter, marca e cartões arredondados. A aplicação às telas atuais e as referências estão em [Identidade visual](docs/identidade-visual.md).
-
-Há dois perfis: **aluno** e **professor**. A primeira tela permite escolher como acessar; em seguida é possível entrar ou criar uma conta daquele perfil. A API aceita somente `student` e `teacher`, grava essa escolha no MySQL e usa o papel persistido para autorizar cada requisição — selecionar professor não concede acesso global a contas ou dados. O professor gera um código em Meus alunos; o aluno informa esse código em Meu professor e confirma o vínculo. Detalhes em [Perfis e vínculos](docs/perfis-e-vinculos.md). O aluno acessa Minhas fichas; professor usa Montar fichas → Fichas do aluno. Veja [Fichas](docs/fichas.md). Aluno inicia pela ficha e recupera em Histórico e evolução; veja [Registro de treinos](docs/treinos.md). Professor acompanha em Meus alunos → Histórico do aluno, somente de leitura. Veja [Histórico e armazenamento](docs/historico-e-armazenamento.md).
-
-As descrições dos exercícios incluem os músculos trabalhados e os papéis de auxiliares e estabilizadores. A [revisão muscular e suas fontes](docs/revisao-musculos-exercicios.md) registra as variantes consideradas e os limites de identificação dos exemplos genéricos.
-
-## Componentes
-
-| Local | Responsabilidade |
-| --- | --- |
-| `src/Workoutly.Mobile` | Interface mobile nativa em C# e XAML para Android e iOS. |
-| `src/Workoutly.Api` | Serviço HTTP ASP.NET Core. MySQL, autenticação por sessão revogável, autorização da conta e prontidão. |
-| `tests/Workoutly.Api.Tests` | Testes HTTP e teste MySQL real em base aleatória. Testes de dispositivo continuam separados. |
-| `docs` | Requisitos, backlog, decisões e evidências. |
-| `.agents/skills` | Procedimentos de apoio ao Codex, não dependências do app. |
-
-## Pré-requisitos
-
-- SDK .NET **10.0.401** (ou patch compatível), workload set **10.0.401.1** e MAUI **10.0.110**; ver `global.json` e `Directory.Build.props`.
-- Workloads MAUI: `dotnet workload restore src/Workoutly.Mobile/Workoutly.Mobile.csproj`.
-- Mac para compilar e executar iOS: Xcode selecionado, runtime do simulador e componentes compatíveis com o workload.
-- Android: Android SDK e JDK 21. O teste no Windows requer a configuração desses componentes nesse computador.
-- Para instalar em iPhone físico: assinatura e provisionamento Apple.
-
-Neste Mac o SDK utilizado está em `/Users/pedrobaldi/.dotnet/dotnet`. Se o comando `dotnet --version` mostrar outro SDK, use esse executável ou ajuste o PATH do terminal/IDE.
-
-## Testar cadastro e login neste Mac
-
-Dê dois cliques em `Executar-local.command`, ou execute:
+Use SDK .NET 10.0.401 (ou patch compatível), workloads MAUI do projeto, Android SDK 36 e JDK 21 para Android, ou macOS com Xcode e simulador compatíveis para iOS. A API incluída usa MySQL 9.6. Na raiz:
 
 ```sh
-python3 scripts/dev-native.py
+dotnet workload restore src/Workoutly.Mobile/Workoutly.Mobile.csproj
+dotnet restore Workoutly.slnx
 ```
 
-Esse helper usa o MySQL nativo instalado, em uma instância exclusiva do projeto, e inicia a API em localhost. Os dados ficam em `.local/`, ignorado pelo Git, e sobrevivem ao reinício. Use **Ctrl+C** no terminal para encerrar os serviços sem apagar as contas. O Docker não é necessário nesse caminho. Não execute uma segunda instância enquanto a primeira estiver aberta.
+**Mac com MySQL nativo:** execute `python3 scripts/dev-native.py` e mantenha o terminal aberto. O helper gera senhas em `.env`, prepara uma instância própria em `.local/`, aplica as migrações e inicia a API na porta **5186**. Ctrl+C encerra a instância preservando os dados.
 
-Em seguida, execute o projeto MAUI no simulador pela IDE, toque em **Criar uma conta** e cadastre dados fictícios de teste. Na conta, **Explorar exercícios** abre o catálogo; **Novo exercício** cria um registro privado. Os contratos e explicações estão em [Conta e acesso](docs/autenticacao.md) e [Catálogo de exercícios](docs/exercicios.md).
-
-## Abrir e executar
-
-Abra `Workoutly.slnx` no Rider ou Visual Studio compatível com .NET 10.
-
-### API e testes
-
-Na raiz do repositório:
+**Alternativa com Docker Compose** (Windows, macOS ou Linux, com Python 3 e Docker):
 
 ```sh
-dotnet run --project src/Workoutly.Api --launch-profile http
+python3 scripts/dev.py init
+docker compose up -d --wait
+python3 scripts/dev.py migrate
+python3 scripts/dev.py run
 ```
 
-Abra http://localhost:5080/health. Resposta esperada:
+No Windows use `py` caso esse seja o seu comando de Python. O Compose da cópia usa projeto `workoutly-mobile-final`, volume próprio e porta MySQL **3317**. Confira no computador **http://localhost:5186/health/ready**. O esperado é HTTP 200 e esquema 11. Só então rode o app pela IDE e cadastre contas fictícias de aluno e professor.
 
-```json
-{"service":"Workoutly.Api","status":"ok","databaseConfigured":false}
-```
+**Endereço da API** em `src/Workoutly.Mobile/Services/ApiSettings.cs`. O padrão aponta para a máquina de desenvolvimento pelo simulador iOS (`http://localhost:5186/`) ou pelo emulador Android (`http://10.0.2.2:5186/`). Em dois aparelhos físicos, configure nos dois builds a mesma URL HTTPS de uma **instância isolada**, com certificado confiável e banco próprio. O serviço precisa estar acessível aos dois telefones. Cada instalação usa o identificador independente `br.edu.workoutly.mobile.finalapp`.
 
-Sem conexão configurada, `/health` continua respondendo 200 com `databaseConfigured=false`, e `/health/ready` retorna 503. Para preparar o MySQL e executar os testes reais, leia [MySQL no Workoutly](docs/mysql.md).
+## Demonstrar em sala
 
-A API de desenvolvimento escuta somente no computador local e pode ser exercitada pelos testes HTTP. O app usa a API hospedada em https://workoutly-api.onrender.com/ em Debug e Release, tanto em aparelhos físicos quanto em simuladores e emuladores.
+1. Entre como professor. Em **Início → Meus alunos**, gere o código. No outro aparelho, entre como aluno e confirme o código em **Meu professor**.
+2. **Modelos → Novo modelo**. Dê um nome, marque favorito, abra **Adicionar exercício**, escolha **Incluir**, ajuste séries/repetições e salve. Feche e reabra, pesquise enquanto digita e abra para editar. O catálogo dos modelos contém os 30 exercícios compartilhados do PI com os mesmos identificadores.
+3. **Início → Montar fichas → Fichas do aluno → Nova ficha → Usar modelo nesta ficha**. Escolha o modelo, revise e salve. Só este último botão publica o plano. Se for modificar uma ficha existente, o servidor cria uma revisão.
+4. No celular do aluno, entre em **Minhas fichas** ou toque em **Atualizar**. Inicie o treino, registre uma série, marque **Feita** e conclua. Abra **Histórico e evolução → Ver treino**. O professor pode consultar o histórico do aluno vinculado, somente para leitura.
+5. Volte a **Modelos**, abra o registro, cancele a exclusão, depois confirme. O modelo sai do SQLite. A ficha já publicada e o histórico continuam no servidor. Confira que uma segunda conta no mesmo aparelho tem sua própria lista.
+
+## Seguir o código
+
+| Ação | Onde acompanhar |
+|---|---|
+| Salvar modelo | `PlanPage.xaml` → `OnSave` → `PlanEditorViewModel.SaveAsync` → `TemplateDao.Save` → transação SQLite. |
+| Salvar ficha real | A mesma View e ViewModel → `AccountClient.SavePlanAsync` → `PlanEndpoints` → `PlanService` → MySQL. |
+| Retornar à lista | `PlansPage.OnAppearing` → `PlansViewModel.LoadAsync` → a lista ligada a `Visible` é atualizada. |
+| Buscar exercício | `ExercisesPage` e `PlanExercisePickerPage` usam `CatalogViewModel`. |
+| Registrar e consultar série | `WorkoutPage` → `AccountClient` → `WorkoutService`. A consulta de `WorkoutsPage` passa por `WorkoutHistoryService`. |
+
+O **Model** é `Models/PlanItem.cs`. O SQLite fica no diretório privado `FileSystem.AppDataDirectory/modelos-<hash>.db3`. O hash usa endereço do serviço e ID da conta autenticada. `ModeloFicha` guarda nome, observações, favorito e versão. `ExercicioLocal` contém o catálogo reutilizável. `ItemModelo` liga os dois e guarda posição, séries, repetições e carga em centésimos de kg. `SecureStorage` guarda a sessão da conta. Uma sessão previamente autenticada e ainda válida pode abrir seus modelos quando a API está fora do ar.
+
+## Verificar e comparar
 
 ```sh
-dotnet build src/Workoutly.Api/Workoutly.Api.csproj
-dotnet test tests/Workoutly.Api.Tests/Workoutly.Api.Tests.csproj
+dotnet run --project tests/Workoutly.Local.Tests
+dotnet run --project tests/Workoutly.Local.Tests -- --online
+dotnet test tests/Workoutly.Api.Tests
 ```
 
-### iPhone no Mac
+O segundo comando usa somente `localhost:5186` e cadastra três contas descartáveis na instância de demonstração. Para incluir todos os testes MySQL da suíte, use `python3 scripts/test-native-mysql.py` em um ambiente com o servidor nativo.
 
-Na IDE, selecione `Workoutly.Mobile`, o framework `net10.0-ios`, um simulador de iPhone e **Run**.
-
-Para conferir apenas a compilação no Mac Apple Silicon:
-
-```sh
-dotnet build src/Workoutly.Mobile/Workoutly.Mobile.csproj -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64
-```
-
-### Android no Mac ou Windows
-
-Na IDE, selecione `Workoutly.Mobile`, `net10.0-android` e um emulador ou aparelho Android com depuração USB.
-
-```sh
-dotnet build src/Workoutly.Mobile/Workoutly.Mobile.csproj -f net10.0-android
-```
-
-Neste Mac, o SDK detectou Java 25 por padrão. Para usar o JDK 21 já instalado sem alterar o Java global:
-
-```sh
-dotnet build src/Workoutly.Mobile/Workoutly.Mobile.csproj -f net10.0-android -p:JavaSdkDirectory=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-```
-
-Esse caminho é específico deste Mac. No Windows ou em outro Mac, selecione o JDK 21 instalado na máquina pela IDE ou pela propriedade `JavaSdkDirectory`.
-
-A solução inclui o projeto mobile: compilar a solução inteira exige os workloads das plataformas. Para trabalhar somente no backend, compile o projeto da API e execute seu projeto de testes.
-
-## Como vamos desenvolver
-
-Leia `docs/backlog.md` para a sequência e critérios de aceite, `docs/arquitetura.md` para a separação de responsabilidades e `docs/skills.md` para usar as skills instaladas. A persistência MySQL foi implementada na API. Prepare e verifique seu ambiente seguindo `docs/mysql.md`. Conta, acesso, exercícios, vínculos e fichas estão implementados. Registro e consulta de sessões próprias também estão implementados. Correção dos registros próprios também está implementada; veja [Correção de treinos](docs/correcao-treinos.md). Histórico, indicadores e acompanhamento pelo professor também estão implementados; veja [Histórico e armazenamento](docs/historico-e-armazenamento.md). UX-01 está concluído; veja [Experiência de uso](docs/experiencia-de-uso.md). O próximo incremento é QA-01: execução do fluxo completo nas plataformas e registro dos resultados.
-
-Ao concluir cada incremento serão registrados o conceito, a decisão, onde aparece no código e a forma de testar. Slides e avaliação com participantes permanecem para as etapas correspondentes.
-
-O openGym é referência de experiência e organização, não código incorporado. Ver `docs/referencias.md`.
+A branch **origem-pi** contém a árvore original. A branch **trabalho-final-mobile** contém a entrega. Compare com `git diff origem-pi..trabalho-final-mobile`. Consulte o [PDF com as telas](docs/mobile-final/Workoutly-Mobile-Relatorio.pdf), a [matriz do enunciado](docs/mobile-final/Requisitos.md) e o [resumo das origens, mudanças e testes](docs/mobile-final/Verificacao.md). Os demais documentos em `docs/` registram etapas históricas do PI. Os créditos originais estão em `THIRD-PARTY-NOTICES.md` e `docs/licenses/`.

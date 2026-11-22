@@ -1,181 +1,104 @@
-using System.Globalization;
 using Workoutly.Mobile.Services;
+using Workoutly.Mobile.ViewModels;
+
 namespace Workoutly.Mobile;
 
 public partial class PlanPage : ContentPage, IConfirmLeave
 {
-    private sealed record Row(PlanExerciseItem Item, Border View, Label Order, Entry Sets, Entry Repetitions, Entry Weight);
     private readonly AccountClient _accounts;
-    private readonly string? _studentId;
-    private readonly string _id;
-    private readonly List<Row> _rows = [];
-    private int _version;
-    private bool _busy;
-    private bool _allowLeave;
-    private string[] _baseline = [];
+    private readonly PlanEditorViewModel _editor;
+    private bool _busy, _allowLeave;
 
-    public PlanPage(AccountClient accounts, string? studentId, PlanItem? plan)
+    public PlanPage(AccountClient accounts, string? studentId, PlanItem? plan, bool local = false)
     {
         InitializeComponent();
-        FormFeedback.FollowError(PageScroll, ErrorText);
         _accounts = accounts;
-        _studentId = studentId;
-        _id = plan?.Id ?? Guid.NewGuid().ToString();
-        if (plan is not null) ShowPlan(plan);
-        _baseline = FormValues();
+        _editor = new(accounts, studentId, local);
+        if (plan is not null) _editor.Fill(plan, false);
+        _editor.Remember();
+        BindEditor();
+        Title = local ? "Modelo no aparelho" : "Ficha de treino";
+        Heading.Text = local ? (plan is null ? "Novo modelo" : "Editar modelo") : (plan is null ? "Nova ficha" : "Editar ficha");
+        UseTemplate.IsVisible = !local;
+        FavoritePanel.IsVisible = local;
+        DeleteButton.IsVisible = ReloadButton.IsVisible = plan is not null;
+        if (local) { ReloadButton.Text = "Recarregar modelo"; DeleteButton.Text = "Excluir modelo"; }
+        SaveButton.Text = local ? "Salvar modelo" : "Salvar ficha";
+        FormFeedback.FollowError(PageScroll, ErrorText);
     }
-    private string[] FormValues() => new[] { NameEntry.Text ?? "", NotesEntry.Text ?? "" }
-        .Concat(_rows.SelectMany(row => new[] { row.Item.ExerciseId, row.Sets.Text ?? "", row.Repetitions.Text ?? "", row.Weight.Text ?? "" })).ToArray();
-    public Task<bool> CanLeaveAsync()
-    {
-        if (_allowLeave) return Task.FromResult(true);
-        if (_busy) return Task.FromResult(false);
-        return FormValues().SequenceEqual(_baseline) ? Task.FromResult(true) :
-            DisplayAlertAsync("Descartar alterações da ficha?", "Os campos ainda não salvos serão perdidos. Você pode continuar editando para salvar depois.", "Descartar e voltar", "Continuar editando");
-    }
-    private Style StyleFor(string key) => (Style)Application.Current!.Resources[key];
-    private void ShowPlan(PlanItem plan)
-    {
-        _version = plan.Version;
-        Heading.Text = "Editar ficha";
-        NameEntry.Text = plan.Name;
-        NotesEntry.Text = plan.Notes;
-        _rows.Clear();
-        ItemsPanel.Children.Clear();
-        foreach (var item in plan.Exercises) AddRow(item);
-        ReloadButton.IsVisible = DeleteButton.IsVisible = true;
-        _baseline = FormValues();
-    }
-    private void AddRow(PlanExerciseItem item)
-    {
-        var order = new Label { Style = StyleFor("Eyebrow") };
-        var sets = new Entry { Text = item.Sets.ToString(CultureInfo.InvariantCulture), Keyboard = Keyboard.Numeric, MaxLength = 2, AutomationId = $"plan_sets_{item.ExerciseId}" };
-        var reps = new Entry { Text = item.Repetitions.ToString(CultureInfo.InvariantCulture), Keyboard = Keyboard.Numeric, MaxLength = 3, AutomationId = $"plan_reps_{item.ExerciseId}" };
-        var weight = new Entry
-        {
-            Text = item.SuggestedWeightKg?.ToString("0.##", CultureInfo.CurrentCulture),
-            Placeholder = "0 para peso corporal",
-            Keyboard = Keyboard.Numeric,
-            MaxLength = 7,
-            AutomationId = $"plan_weight_{item.ExerciseId}"
-        };
-        var numbers = new Grid { ColumnDefinitions = [new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)], ColumnSpacing = 12 };
-        Border Field(string title, Entry entry) => new() { Style = StyleFor("InputBorder"), Content = new VerticalStackLayout { Children = { new Label { Text = title, Style = StyleFor("FieldLabel") }, entry } } };
-        numbers.Add(Field("Séries (1–20)", sets));
-        numbers.Add(Field("Repetições (1–200)", reps), 1);
-        var actions = new Grid { ColumnDefinitions = [new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Star)], ColumnSpacing = 4 };
-        var up = new Button { Text = "Subir", Style = StyleFor("TextButton") };
-        var down = new Button { Text = "Descer", Style = StyleFor("TextButton") };
-        var remove = new Button { Text = "Remover", Style = StyleFor("TextButton") };
-        var view = new Border { Style = StyleFor("SurfaceCard"), Content = new VerticalStackLayout { Spacing = 10, Children = {
-            order, new Label { Text = item.Name, FontFamily = "InterSemiBold", FontSize = 18 },
-            new Label { Text = $"{item.MuscleGroup} • {item.Equipment}", Style = StyleFor("SecondaryText") },
-            new Label { Text = item.Description, Style = StyleFor("SecondaryText"), IsVisible = !string.IsNullOrEmpty(item.Description) },
-            numbers, Field("Carga sugerida (kg, opcional)", weight), actions } } };
-        var row = new Row(item, view, order, sets, reps, weight);
-        up.Clicked += (_, _) => Move(row, -1);
-        down.Clicked += (_, _) => Move(row, 1);
-        remove.Clicked += async (_, _) =>
-        {
-            if (_busy) return;
-            _busy = true;
-            try
-            {
-                if (!await DisplayAlertAsync("Remover exercício da ficha?", $"{item.Name} e suas metas sairão desta edição. A mudança só será aplicada ao salvar.", "Remover", "Cancelar")) return;
-                _rows.Remove(row); ItemsPanel.Children.Remove(view); Renumber();
-            }
-            finally { _busy = false; }
-        };
-        actions.Add(up); actions.Add(down, 1); actions.Add(remove, 2);
-        _rows.Add(row);
-        ItemsPanel.Children.Add(view);
-        Renumber();
-    }
-    private void Move(Row row, int delta)
-    {
-        if (_busy) return;
-        var index = _rows.IndexOf(row);
-        var target = index + delta;
-        if (target < 0 || target >= _rows.Count) return;
-        _rows.RemoveAt(index); _rows.Insert(target, row);
-        ItemsPanel.Children.RemoveAt(index); ItemsPanel.Children.Insert(target, row.View);
-        Renumber();
-    }
-    private void Renumber()
-    {
-        ErrorText.IsVisible = false;
-        for (var i = 0; i < _rows.Count; i++) _rows[i].Order.Text = $"EXERCÍCIO {i + 1:00}";
-        CountText.Text = $"Exercícios ({_rows.Count})";
-    }
+
+    private void BindEditor() { BindingContext = null; BindingContext = _editor; }
+    public async Task<bool> CanLeaveAsync() => _allowLeave || (!_busy && (!_editor.Changed ||
+        await DisplayAlertAsync("Descartar alterações?", "O conteúdo em edição ainda não foi salvo.", "Descartar", "Continuar editando")));
+
     private async void OnAdd(object? sender, EventArgs args)
     {
-        if (_busy) return;
-        if (_rows.Count >= 50) { ShowError("Use até 50 exercícios por ficha."); return; }
-        _busy = true;
-        try
-        {
-            await Navigation.PushAsync(new PlanExercisePickerPage(_accounts, _rows.Select(r => r.Item.ExerciseId).ToHashSet(), item =>
-                AddRow(new(item.Id, item.Name, item.MuscleGroup, item.Equipment, item.Description, 3, 10))));
-        }
-        finally { _busy = false; }
+        if (_editor.Items.Count >= 50) { ShowError("Use até 50 exercícios."); return; }
+        await ExecuteAsync(() => Navigation.PushModalAsync(new PlanExercisePickerPage(_accounts,
+            _editor.Items.Select(r => r.Exercise.ExerciseId).ToHashSet(), item =>
+            _editor.Items.Add(new(new(item.Id, item.Name, item.MuscleGroup, item.Equipment, item.Description, 3, 10))), _editor.Local)));
     }
+
+    private async void OnUseTemplate(object? sender, EventArgs args) => await ExecuteAsync(async () =>
+    {
+        if ((_editor.Items.Count > 0 || !string.IsNullOrWhiteSpace(_editor.Name) || !string.IsNullOrWhiteSpace(_editor.Notes)) &&
+            !await DisplayAlertAsync("Preencher com modelo?", "Ao escolher, os campos serão substituídos. A ficha só muda ao salvar.", "Escolher", "Cancelar")) return;
+        await Navigation.PushModalAsync(new PlansPage(_accounts, local: true, select: template =>
+        {
+            _editor.Fill(template, true);
+            BindEditor();
+        }));
+    });
+
+    private async void OnItemAction(object? sender, EventArgs args)
+    {
+        if (_busy || sender is not Button { BindingContext: ExerciseFields item } button) return;
+        var index = _editor.Items.IndexOf(item);
+        if (index < 0) return;
+        if (button.Text == "Remover")
+        {
+            if (await DisplayAlertAsync("Remover exercício?", item.Exercise.Name, "Remover", "Cancelar")) _editor.Items.Remove(item);
+            return;
+        }
+        var next = index + (button.Text == "Subir" ? -1 : 1);
+        if (next >= 0 && next < _editor.Items.Count) _editor.Items.Move(index, next);
+    }
+
     private async void OnSave(object? sender, EventArgs args) => await ExecuteAsync(async () =>
     {
-        var name = NameEntry.Text?.Trim() ?? string.Empty;
-        if (name.Length < 2) throw new AccountException("Informe um nome entre 2 e 120 caracteres.");
-        if (_rows.Count == 0) throw new AccountException("Adicione pelo menos um exercício à ficha.");
-        var items = new List<PlanExercisePayload>();
-        foreach (var row in _rows)
-        {
-            if (!int.TryParse(row.Sets.Text, out var sets) || sets is < 1 or > 20 || !int.TryParse(row.Repetitions.Text, out var reps) || reps is < 1 or > 200)
-                throw new AccountException($"Revise {row.Item.Name}: use de 1 a 20 séries e de 1 a 200 repetições.");
-            decimal? suggestedWeight = null;
-            if (!string.IsNullOrWhiteSpace(row.Weight.Text))
-            {
-                if (!decimal.TryParse(row.Weight.Text.Trim().Replace(',', '.'), NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var weight)
-                    || weight is < 0 or > 2000 || decimal.Round(weight, 2) != weight)
-                    throw new AccountException($"Revise a carga de {row.Item.Name}: use 0 a 2000 kg, com até duas casas decimais.");
-                suggestedWeight = weight;
-            }
-            items.Add(new(row.Item.ExerciseId, sets, reps, suggestedWeight));
-        }
-        await _accounts.SavePlanAsync(_studentId, _id, _version, name, NotesEntry.Text ?? string.Empty, items.ToArray());
+        await _editor.SaveAsync();
         _allowLeave = true;
         await Navigation.PopAsync();
+        if (Shell.Current.CurrentPage is PlansPage list) list.ShowMessage(_editor.Local ? "Modelo salvo neste aparelho" : "Ficha salva para o aluno");
     });
     private async void OnReload(object? sender, EventArgs args) => await ExecuteAsync(async () =>
     {
-        if (!await DisplayAlertAsync("Recarregar ficha?", "Os campos em edição serão substituídos pela versão salva no serviço.", "Recarregar", "Cancelar")) return;
-        ShowPlan(await _accounts.GetPlanAsync(_studentId, _id));
+        if (!await DisplayAlertAsync("Recarregar?", "Substituir os campos pela versão salva?", "Recarregar", "Cancelar")) return;
+        _editor.Fill(await _editor.ReloadAsync(), false);
+        BindEditor();
+        _editor.Remember();
     });
     private async void OnDelete(object? sender, EventArgs args) => await ExecuteAsync(async () =>
     {
-        if (!await DisplayAlertAsync("Excluir ficha?", "A ficha sairá da lista. As versões salvas serão preservadas.", "Excluir", "Cancelar")) return;
-        await _accounts.DeletePlanAsync(_studentId, _id, _version);
+        var question = _editor.Local ? "Excluir modelo deste aparelho?" : "Excluir ficha e preservar os treinos já feitos?";
+        if (!await DisplayAlertAsync(question, _editor.Name, "Excluir", "Cancelar")) return;
+        await _editor.DeleteAsync();
         _allowLeave = true;
         await Navigation.PopAsync();
     });
+
     private async Task ExecuteAsync(Func<Task> action)
     {
         if (_busy) return;
         _busy = true;
         Form.IsEnabled = false;
         Loading.IsVisible = Loading.IsRunning = true;
-        SaveButton.Text = "Aguarde…";
         ErrorText.IsVisible = false;
         try { await action(); }
-        catch (SessionExpiredException exception)
-        {
-            await DisplayAlertAsync("Acesso", exception.Message, "OK");
-            _allowLeave = true;
-            await Navigation.PopToRootAsync();
-        }
-        catch (AccountException exception) { ShowError(exception.Message); }
-        finally
-        {
-            _busy = false; Form.IsEnabled = true; Loading.IsVisible = Loading.IsRunning = false; SaveButton.Text = "Salvar ficha";
-            if (ErrorText.IsVisible) await PageScroll.ScrollToAsync(ErrorText, ScrollToPosition.End, true);
-        }
+        catch (SessionExpiredException e) { await DisplayAlertAsync("Acesso", e.Message, "OK"); _allowLeave = true; await Navigation.PopToRootAsync(); }
+        catch (Exception e) when (e is AccountException or SQLite.SQLiteException or InvalidOperationException or IOException)
+        { ShowError(e.Message); }
+        finally { _busy = false; Form.IsEnabled = true; Loading.IsVisible = Loading.IsRunning = false; }
     }
     private void ShowError(string message) { ErrorText.Text = message; ErrorText.IsVisible = true; }
 }

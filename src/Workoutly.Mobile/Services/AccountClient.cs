@@ -19,7 +19,7 @@ public sealed record RegisterPayload(string Name, string Email, string Password,
 public sealed record ProfileUpdatePayload(string Name, string Email, string? CurrentPassword);
 public sealed record PasswordChangePayload(string CurrentPassword, string NewPassword);
 public sealed record AccountDeletePayload(string CurrentPassword);
-public sealed record StoredSession(string ApiUrl, string Token);
+public sealed record StoredSession(string ApiUrl, string Token, string UserId, DateTimeOffset ExpiresAt);
 public sealed record ExerciseItem(string Id, string Name, string MuscleGroup, string Equipment, string Description, bool IsShared, bool IsOwned = false, bool IsInPlan = false)
 {
     public string Origin => IsOwned ? "Meu exercício" : IsInPlan ? "Na minha ficha" : "Catálogo";
@@ -31,17 +31,21 @@ public sealed record ExerciseItem(string Id, string Name, string MuscleGroup, st
 }
 public sealed record CreateExercisePayload(string Name, string MuscleGroup, string Equipment, string Description);
 
-public sealed record PlanExerciseItem(string ExerciseId, string Name, string MuscleGroup, string Equipment, string Description, int Sets, int Repetitions,
-    decimal? SuggestedWeightKg = null, decimal? LastUsedWeightKg = null);
-public sealed record PlanItem(string Id, string StudentId, string Name, string Notes, int Version, PlanExerciseItem[] Exercises)
-{
-    public string Summary => $"{Exercises.Length} exercício(s) • {Exercises.Sum(item => item.Sets)} séries previstas";
-}
 public sealed record PlanExercisePayload(string ExerciseId, int Sets, int Repetitions, decimal? SuggestedWeightKg);
 public sealed record CreatePlanPayload(string Id, string Name, string Notes, PlanExercisePayload[] Exercises);
 public sealed record UpdatePlanPayload(int Version, string Name, string Notes, PlanExercisePayload[] Exercises);
 
-public sealed record WorkoutSetItem(int Repetitions, decimal WeightKg);
+public sealed record WorkoutSetItem(int Repetitions, decimal WeightKg)
+{
+    public static WorkoutSetItem FromFields(string? repetitions, string? load, string exercise)
+    {
+        if (!int.TryParse(repetitions, out var reps) || reps is < 1 or > 200 ||
+            !decimal.TryParse(load?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.AllowDecimalPoint,
+                System.Globalization.CultureInfo.InvariantCulture, out var kg) || kg is < 0 or > 2000 || decimal.Round(kg, 2) != kg)
+            throw new AccountException($"Revise {exercise}: 1 a 200 repetições e 0 a 2000 kg, com até duas casas decimais. Use 0 para peso corporal.");
+        return new(reps, kg);
+    }
+}
 public sealed record WorkoutExercisePayload(string ExerciseId, WorkoutSetItem[] Sets);
 public sealed record CreateWorkoutPayload(string Id, string PlanId, int PlanVersion, DateTimeOffset StartedAt, int DurationSeconds, string Notes, WorkoutExercisePayload[] Exercises);
 public sealed record UpdateWorkoutPayload(string EditId, int Version, int DurationSeconds, string Notes, WorkoutExercisePayload[] Exercises);
@@ -92,7 +96,13 @@ internal partial class AccountJson : JsonSerializerContext;
 
 public sealed class AccountClient
 {
-    private const string ApiUrl = "https://workoutly-api.onrender.com/";
+    private static readonly string ApiUrl = ApiSettings.BaseUrl;
+    private string? _owner;
+    private Workoutly.Mobile.Data.TemplateDao? _templates;
+    public bool CanOpenLocalTemplates => _owner is not null;
+    public event Action? SessionEnded;
+    public Workoutly.Mobile.Data.TemplateDao Templates => _owner is null ? throw new SessionExpiredException() :
+        _templates ??= new(FileSystem.AppDataDirectory, ApiUrl, _owner);
     private const string SessionKey = "workoutly.account.session";
     private readonly HttpClient _http = new(new HttpClientHandler { AllowAutoRedirect = false })
     {
@@ -103,7 +113,6 @@ public sealed class AccountClient
 
     public async Task<AccountProfile?> RestoreAsync()
     {
-        _token = null;
         StoredSession? stored;
         try
         {
@@ -122,8 +131,14 @@ public sealed class AccountClient
             ClearSession();
             return null;
         }
+        if (stored.ExpiresAt <= DateTimeOffset.UtcNow || string.IsNullOrWhiteSpace(stored.UserId))
+        {
+            ClearSession();
+            return null;
+        }
+        SelectOwner(stored.UserId);
         _token = stored.Token;
-        try { return await GetProfileAsync(); }
+        try { var profile = await GetProfileAsync(); SelectOwner(profile.Id); return profile; }
         catch (SessionExpiredException) { return null; }
     }
 
@@ -274,8 +289,9 @@ public sealed class AccountClient
         _token = session.AccessToken;
         try
         {
-            var value = JsonSerializer.Serialize(new StoredSession(ApiUrl, session.AccessToken), AccountJson.Default.StoredSession);
+            var value = JsonSerializer.Serialize(new StoredSession(ApiUrl, session.AccessToken, session.User.Id, session.ExpiresAt), AccountJson.Default.StoredSession);
             await SecureStorage.Default.SetAsync(SessionKey, value);
+            SelectOwner(session.User.Id);
             return session.User;
         }
         catch (Exception exception) when (exception is not OutOfMemoryException)
@@ -285,11 +301,21 @@ public sealed class AccountClient
         }
     }
 
+    private void SelectOwner(string id)
+    {
+        if (_owner != id) _templates = null;
+        _owner = id;
+    }
+
     private void ClearSession()
     {
+        var hadOwner = _owner is not null;
+        _owner = null;
+        _templates = null;
         _token = null;
         try { SecureStorage.Default.Remove(SessionKey); }
         catch (Exception exception) when (exception is not OutOfMemoryException) { }
+        if (hadOwner) SessionEnded?.Invoke();
     }
 
     private async Task<T> SendAsync<T>(HttpMethod method, string path, HttpContent? content, JsonTypeInfo<T> type, bool authenticated)

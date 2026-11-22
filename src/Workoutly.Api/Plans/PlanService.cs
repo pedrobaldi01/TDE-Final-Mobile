@@ -3,9 +3,9 @@ using Workoutly.Api.Data;
 
 namespace Workoutly.Api.Plans;
 
-public sealed record PlanExercise(string ExerciseId, string Name, string MuscleGroup, string Equipment, string Description, int Sets, int Repetitions);
+public sealed record PlanExercise(string ExerciseId, string Name, string MuscleGroup, string Equipment, string Description, int Sets, int Repetitions, decimal? SuggestedWeightKg = null, decimal? LastUsedWeightKg = null);
 public sealed record WorkoutPlan(string Id, string StudentId, string Name, string Notes, int Version, List<PlanExercise> Exercises);
-public sealed record PlanExerciseRequest(Guid ExerciseId, int Sets, int Repetitions);
+public sealed record PlanExerciseRequest(Guid ExerciseId, int Sets, int Repetitions, decimal? SuggestedWeightKg = null);
 public sealed record PlanResult(string Status, WorkoutPlan? Plan = null);
 
 public sealed class PlanService(MySqlDatabase database)
@@ -41,7 +41,10 @@ public sealed class PlanService(MySqlDatabase database)
         command.Transaction = transaction;
         command.CommandText = """
             SELECT p.id, p.student_id, v.name, v.notes, v.version,
-                   i.exercise_id, i.name, i.muscle_group, i.equipment, i.description, i.set_count, i.repetitions
+                   i.exercise_id, i.name, i.muscle_group, i.equipment, i.description, i.set_count, i.repetitions, i.suggested_weight_kg,
+                   (SELECT x.weight_kg FROM workout_sessions s JOIN workout_session_sets x ON x.session_id=s.id
+                    WHERE s.student_id=p.student_id AND x.exercise_id=i.exercise_id
+                    ORDER BY s.started_at DESC, s.id DESC, x.set_position DESC LIMIT 1)
             FROM workout_plans p
             JOIN workout_plan_versions v ON v.plan_id=p.id AND v.version=COALESCE(@version,p.current_version)
             JOIN workout_plan_items i ON i.plan_id=v.plan_id AND i.version=v.version
@@ -63,7 +66,8 @@ public sealed class PlanService(MySqlDatabase database)
                 plans.Add(plan);
             }
             plan.Exercises.Add(new(reader.GetGuid(5).ToString(), reader.GetString(6), reader.GetString(7),
-                reader.GetString(8), reader.GetString(9), reader.GetInt32(10), reader.GetInt32(11)));
+                reader.GetString(8), reader.GetString(9), reader.GetInt32(10), reader.GetInt32(11),
+                reader.IsDBNull(12) ? null : reader.GetDecimal(12), reader.IsDBNull(13) ? null : reader.GetDecimal(13)));
         }
         return plans;
     }
@@ -86,7 +90,7 @@ public sealed class PlanService(MySqlDatabase database)
             // O mesmo ID de criação pode ser reenviado sem duplicar a ficha.
             if (current is not null)
                 return current.Version == 1 && current.Name == name && current.Notes == notes &&
-                    current.Exercises.Select(e => (e.ExerciseId, e.Sets, e.Repetitions)).SequenceEqual(items.Select(e => (e.ExerciseId.ToString(), e.Sets, e.Repetitions)))
+                    current.Exercises.Select(e => (e.ExerciseId, e.Sets, e.Repetitions, e.SuggestedWeightKg)).SequenceEqual(items.Select(e => (e.ExerciseId.ToString(), e.Sets, e.Repetitions, e.SuggestedWeightKg)))
                     ? new("existing", current) : new("conflict");
             command.CommandText = "SELECT id FROM workout_plans WHERE id=@id";
             if (await command.ExecuteScalarAsync(ct) is not null) return new("conflict");
@@ -102,7 +106,7 @@ public sealed class PlanService(MySqlDatabase database)
             var existing = current?.Exercises.FirstOrDefault(e => e.ExerciseId == item.ExerciseId.ToString());
             if (existing is not null)
             {
-                exercises.Add(existing with { Sets = item.Sets, Repetitions = item.Repetitions });
+                exercises.Add(existing with { Sets = item.Sets, Repetitions = item.Repetitions, SuggestedWeightKg = item.SuggestedWeightKg });
                 continue;
             }
             await using var lookup = connection.CreateCommand();
@@ -112,7 +116,7 @@ public sealed class PlanService(MySqlDatabase database)
             lookup.Parameters.AddWithValue("@actor", actor);
             await using var reader = await lookup.ExecuteReaderAsync(ct);
             if (!await reader.ReadAsync(ct)) return new("exercise_invalid");
-            exercises.Add(new(item.ExerciseId.ToString(), reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), item.Sets, item.Repetitions));
+            exercises.Add(new(item.ExerciseId.ToString(), reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), item.Sets, item.Repetitions, item.SuggestedWeightKg));
         }
         var next = expectedVersion + 1;
         command.Parameters.AddWithValue("@version", next);
@@ -132,8 +136,8 @@ public sealed class PlanService(MySqlDatabase database)
             await using var insert = connection.CreateCommand();
             insert.Transaction = transaction;
             insert.CommandText = """
-                INSERT INTO workout_plan_items (plan_id,version,position,exercise_id,name,muscle_group,equipment,description,set_count,repetitions)
-                VALUES (@id,@version,@position,@exercise,@name,@muscle,@equipment,@description,@sets,@repetitions)
+                INSERT INTO workout_plan_items (plan_id,version,position,exercise_id,name,muscle_group,equipment,description,set_count,repetitions,suggested_weight_kg)
+                VALUES (@id,@version,@position,@exercise,@name,@muscle,@equipment,@description,@sets,@repetitions,@weight)
                 """;
             insert.Parameters.AddWithValue("@id", id);
             insert.Parameters.AddWithValue("@version", next);
@@ -143,6 +147,7 @@ public sealed class PlanService(MySqlDatabase database)
             insert.Parameters.AddWithValue("@muscle", item.MuscleGroup);
             insert.Parameters.AddWithValue("@equipment", item.Equipment);
             insert.Parameters.AddWithValue("@description", item.Description);
+            insert.Parameters.AddWithValue("@weight", (object?)item.SuggestedWeightKg ?? DBNull.Value);
             insert.Parameters.AddWithValue("@sets", item.Sets);
             insert.Parameters.AddWithValue("@repetitions", item.Repetitions);
             await insert.ExecuteNonQueryAsync(ct);

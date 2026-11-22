@@ -17,8 +17,9 @@
             <VerticalStackLayout x:Name="RoleChoicePanel" Grid.Row="1" Spacing="14">
                 <Label Text="Como deseja acessar?" FontFamily="InterBold" FontSize="24" SemanticProperties.HeadingLevel="Level2" />
                 <Label Text="Escolha seu perfil para entrar ou criar uma conta." Style="{StaticResource SecondaryText}" />
-                <Button Text="Acessar como aluno" Clicked="OnChooseStudent" HeightRequest="54" FontSize="16" AutomationId="choose_student" />
-                <Button Text="Acessar como professor" Clicked="OnChooseTeacher" HeightRequest="54" FontSize="16" Style="{StaticResource SecondaryButton}" AutomationId="choose_teacher" />
+                <RadioButton x:Name="StudentRole" GroupName="perfil" SemanticProperties.Description="Aluno" Content="Aluno" IsChecked="True" TextColor="{StaticResource TextPrimary}" />
+                <RadioButton GroupName="perfil" SemanticProperties.Description="Professor" Content="Professor" TextColor="{StaticResource TextPrimary}" />
+                <Button Text="Continuar" Clicked="OnChooseRole" AutomationId="choose_role" />
             </VerticalStackLayout>
             <Grid x:Name="AuthPanel" Grid.Row="1" RowDefinitions="Auto,*,Auto" RowSpacing="18" IsVisible="False">
                 <VerticalStackLayout Spacing="18">
@@ -105,6 +106,7 @@
                 <ActivityIndicator x:Name="Loading" IsVisible="False" />
                 <Label x:Name="ErrorText" IsVisible="False" TextColor="{StaticResource Error}" AutomationId="account_error"
                        Padding="0,4" />
+                <Button x:Name="OfflineModels" IsVisible="False" Text="Abrir meus modelos locais" Clicked="OnOfflineModels" Style="{StaticResource SecondaryButton}" />
                 <Button x:Name="RetryAccessButton" Text="Tentar recuperar acesso" Clicked="OnRetryAccess" IsVisible="False" Style="{StaticResource SecondaryButton}" AutomationId="account_retry" />
             </VerticalStackLayout>
         </Grid>
