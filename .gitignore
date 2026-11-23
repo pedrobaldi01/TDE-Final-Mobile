@@ -20,3 +20,15 @@ artifacts/
 .scratch/
 .local/
 src/Workoutly.Mobile/Resources/Images/Exercises/*.png
+
+# Arquivos locais de ferramentas
+/.agents/
+/AGENTS.md
+/GLOSSARY.md
+
+# Manter a entrega mobile, as licenças e os arquivos citados pelo projeto
+/docs/*
+!/docs/mobile-final/
+!/docs/licenses/
+!/docs/mysql.md
+!/docs/catalogo-musculos.json
