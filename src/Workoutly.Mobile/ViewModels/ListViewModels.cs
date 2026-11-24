@@ -19,7 +19,7 @@ public abstract class SearchList : INotifyPropertyChanged
     protected void Refresh() => PropertyChanged?.Invoke(this, new(null));
 }
 
-public sealed class PlansViewModel(TemplateDao dao) : SearchList
+public sealed class PlansViewModel(PlanDao dao) : SearchList
 {
     private PlanItem[] _plans = [];
     private bool _onlyFavorites;
@@ -29,23 +29,21 @@ public sealed class PlansViewModel(TemplateDao dao) : SearchList
         set { _onlyFavorites = value; Refresh(); }
     }
     public PlanItem[] Visible => _plans.Where(p => (!OnlyFavorites || p.Favorite) && Matches(p.Name)).ToArray();
-    public Task LoadAsync()
+    public async Task LoadAsync()
     {
-        _plans = dao.List();
+        _plans = await Task.Run(dao.List);
         Refresh();
-        return Task.CompletedTask;
     }
 }
 
-public sealed class CatalogViewModel(TemplateDao dao, HashSet<string> excluded) : SearchList
+public sealed class CatalogViewModel(PlanDao dao, HashSet<string> excluded) : SearchList
 {
     private ExerciseItem[] _catalog = [];
     public ExerciseItem[] Visible => _catalog.Where(e => !excluded.Contains(e.Id) &&
         Matches($"{e.Name} {e.MuscleGroup} {e.Equipment}")).ToArray();
-    public Task LoadAsync()
+    public async Task LoadAsync()
     {
-        _catalog = dao.Catalog().Select(e => new ExerciseItem(e.ExerciseId, e.Name, e.MuscleGroup, e.Equipment, e.Description)).ToArray();
+        _catalog = await Task.Run(dao.Catalog);
         Refresh();
-        return Task.CompletedTask;
     }
 }

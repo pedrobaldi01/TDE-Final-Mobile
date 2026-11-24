@@ -33,9 +33,9 @@ O nome exige 2 a 120 caracteres. A ficha aceita 1 a 50 exercícios diferentes, 1
 | Views XAML e code-behind | Quatro telas, diálogos, navegação e feedback. |
 | `ViewModels/` | Campos, validações, busca e filtro de favoritas. |
 | `Models/PlanItem.cs` | Ficha, item da ficha e exercício do catálogo. |
-| `Data/TemplateDao.cs` | Consultas e transações SQLite; único ponto de acesso ao banco. |
+| `Data/PlanDao.cs` | Consultas e transações SQLite; único ponto de acesso ao banco. |
 
-Salvar percorre `PlanPage.OnSave` → `PlanEditorViewModel.SaveAsync` → `TemplateDao.Save`. A lista recarrega em `PlansPage.OnAppearing` e atualiza o binding `Visible`. A seleção modal usa `CatalogViewModel`, ocultando exercícios já incluídos.
+Salvar percorre `PlanPage.OnSave` → `PlanEditorViewModel.Save` → `PlanDao.Save`. A lista recarrega em `PlansPage.OnAppearing` e atualiza o binding `Visible`. A seleção modal usa `CatalogViewModel`, ocultando exercícios já incluídos.
 
 O arquivo privado `FileSystem.AppDataDirectory/workoutly.db3` pertence à instalação. São três tabelas: **ModeloFicha** (nome, observações, favorito e versão), **ExercicioLocal** (catálogo inicial de 30 movimentos) e **ItemModelo** (relação, ordem, séries, repetições e carga em centésimos de kg). Os nomes das tabelas foram preservados do DAO do backup. Salvar cabeçalho e itens é uma transação; excluir remove os itens em cascata. A versão detecta edição desatualizada. Não há sincronização ou migração dos antigos arquivos por conta; eles permanecem intactos.
 
@@ -47,8 +47,8 @@ O Shell fornece menu lateral, abas Início/Fichas e navegação empilhada da lis
 dotnet run --project tests/Workoutly.Local.Tests
 ```
 
-Builds iOS e Android e nove verificações automatizadas passaram em 22/11/2026. O fluxo foi exercitado no iPhone 18 Pro Simulator, iOS 27.0. O build Android produziu um aviso XA0033 ao interpretar a versão do Java; execução Android e aparelhos físicos não foram verificados.
+Builds iOS e Android e nove verificações automatizadas passaram após a limpeza em 23/11/2026. O fluxo foi exercitado no iPhone 18 Pro Simulator, iOS 27.0. O build Android produziu um aviso XA0033 ao interpretar a versão do Java; execução Android e aparelhos físicos não foram verificados.
 
 Consulte o [PDF com as telas finais](docs/mobile-final/Workoutly-Mobile-Relatorio.pdf), a [matriz de requisitos](docs/mobile-final/Requisitos.md) e as [evidências](docs/mobile-final/Verificacao.md). Para regenerar o PDF, use Python 3.10 ou superior, instale `reportlab` e execute `python3 scripts/gerar-relatorio.py`.
 
-A API, o MySQL e os fluxos de professor, vínculo, autenticação, execução e histórico foram retirados da entrega. O backup `498005d` e a branch `origem-pi` preservam a versão anterior. Os demais documentos em `docs/` são históricos do PI. Créditos das imagens e fontes em `THIRD-PARTY-NOTICES.md` e `docs/licenses/`.
+A API, o MySQL e os fluxos de professor, vínculo, autenticação, execução e histórico foram retirados da entrega. O histórico do PI está no Git. O commit `8826ddd` guarda a árvore anterior à limpeza. Créditos das imagens e fontes em `THIRD-PARTY-NOTICES.md` e `docs/licenses/`.

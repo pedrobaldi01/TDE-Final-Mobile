@@ -5,11 +5,12 @@ using Workoutly.Mobile.Models;
 var temp = Directory.CreateTempSubdirectory("workoutly-modelos-");
 try
 {
-    var dao = new TemplateDao(temp.FullName);
-    var exercise = dao.Catalog().First();
-    var template = new PlanItem("ficha-a", "Ficha A", "Revisar", 0, [exercise with { Sets = 3, Repetitions = 8 }], true);
+    var dao = new PlanDao(temp.FullName);
+    var entry = dao.Catalog().First();
+    var exercise = new PlanExerciseItem(entry.Id, entry.Name, entry.MuscleGroup, entry.Equipment, 3, 8);
+    var template = new PlanItem("ficha-a", "Ficha A", "Revisar", 0, [exercise], true);
     dao.Save(template);
-    var reopened = new TemplateDao(temp.FullName);
+    var reopened = new PlanDao(temp.FullName);
     var saved = reopened.List().Single();
     Check(saved.Name == "Ficha A" && saved.Favorite && saved.Exercises.Single().Repetitions == 8, "criar e reabrir");
     reopened.Save(saved with { Exercises = [exercise with { Sets = 4, Repetitions = 12 }] });

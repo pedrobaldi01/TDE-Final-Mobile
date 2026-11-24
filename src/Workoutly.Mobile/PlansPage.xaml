@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:Workoutly.Mobile" xmlns:vm="clr-namespace:Workoutly.Mobile.ViewModels" x:DataType="vm:PlansViewModel" x:Name="PlansRoot" xmlns:services="clr-namespace:Workoutly.Mobile.Models" x:Class="Workoutly.Mobile.PlansPage" Title="Fichas">
+             xmlns:vm="clr-namespace:Workoutly.Mobile.ViewModels" x:DataType="vm:PlansViewModel" xmlns:services="clr-namespace:Workoutly.Mobile.Models" x:Class="Workoutly.Mobile.PlansPage" Title="Fichas">
     <Grid Padding="20,16" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
         <VerticalStackLayout Spacing="4">
             <Label Text="ROTINA SEMANAL" Style="{StaticResource Eyebrow}" />
@@ -10,7 +10,7 @@
                 <RadioButton Content="Todas" AutomationId="filter_all"><RadioButton.Value><x:Boolean>False</x:Boolean></RadioButton.Value></RadioButton>
                 <RadioButton Content="Só favoritas" AutomationId="filter_favorites"><RadioButton.Value><x:Boolean>True</x:Boolean></RadioButton.Value></RadioButton>
             </HorizontalStackLayout>
-            <Label x:Name="Subtitle" Text="Organize os exercícios do seu próximo treino." Style="{StaticResource SecondaryText}" />
+            <Label Text="Salvas neste aparelho. Favoritas aparecem primeiro." Style="{StaticResource SecondaryText}" />
         </VerticalStackLayout>
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <Button x:Name="CreateButton" Text="Nova ficha" Clicked="OnCreate" AutomationId="plan_create" />

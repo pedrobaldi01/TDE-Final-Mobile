@@ -5,7 +5,7 @@ namespace Workoutly.Mobile;
 
 public partial class PlansPage : ContentPage
 {
-    private readonly TemplateDao _dao;
+    private readonly PlanDao _dao;
     private bool _busy;
     private readonly PlansViewModel _model;
     private int _messageNumber;
@@ -18,12 +18,11 @@ public partial class PlansPage : ContentPage
         await Task.Delay(3000);
         if (number == _messageNumber) Snackbar.IsVisible = false;
     }
-    public PlansPage(TemplateDao dao)
+    public PlansPage(PlanDao dao)
     {
         InitializeComponent();
         _dao = dao;
         BindingContext = _model = new(dao);
-        Subtitle.Text = "Salvas neste aparelho. Favoritas aparecem primeiro.";
     }
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
     private async Task LoadAsync()

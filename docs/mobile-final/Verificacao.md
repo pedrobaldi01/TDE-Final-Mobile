@@ -10,7 +10,7 @@ Foram removidos o projeto da API, seus testes, cliente HTTP, configurações de 
 
 - **Model:** `Models/PlanItem.cs` define ficha, exercício e item do planejamento.
 - **ViewModel:** valida campos, controla pesquisa e favoritas e chama o DAO. O editor usa bindings de duas vias e coleção observável; o code-behind apresenta diálogos e navega.
-- **DAO:** `TemplateDao` concentra SQLite. Três tabelas: `ModeloFicha`, `ExercicioLocal`, `ItemModelo`. As chaves estrangeiras são habilitadas em cada conexão. Cabeçalho e itens são salvos em transação; excluir ficha elimina seus itens por cascata. O catálogo permanece disponível.
+- **DAO:** `PlanDao` concentra SQLite. Três tabelas: `ModeloFicha`, `ExercicioLocal`, `ItemModelo`. As chaves estrangeiras são habilitadas em cada conexão. Cabeçalho e itens são salvos em transação; excluir ficha elimina seus itens por cascata. O catálogo permanece disponível.
 - **View:** início, lista, editor e seletor modal. O Shell mantém menu lateral, duas abas e pilha de navegação. A confirmação de descarte continua em IConfirmLeave. Erros de validação são revelados por FormFeedback.
 
 O favorito é booleano com efeito real na ordenação e no filtro **Todas / Só favoritas**. Pesquisa e filtro se combinam. Não há fichas fictícias pré-carregadas; somente o catálogo de referência com 30 exercícios.

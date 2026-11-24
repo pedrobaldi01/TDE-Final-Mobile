@@ -7,7 +7,6 @@
     <Color x:Key="Outline">#2B332D</Color>
     <Color x:Key="CardOutline">#314033</Color>
     <Color x:Key="Accent">#C5F67A</Color>
-    <Color x:Key="Mint">#4BD9C7</Color>
     <Color x:Key="TextPrimary">#F5F5F5</Color>
     <Color x:Key="TextSecondary">#A7B0A8</Color>
     <Color x:Key="TextField">#DCE3DD</Color>

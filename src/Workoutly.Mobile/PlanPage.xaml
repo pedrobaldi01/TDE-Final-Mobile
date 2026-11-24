@@ -19,7 +19,7 @@
                         <Editor Text="{Binding Notes, Mode=TwoWay}" Placeholder="Orientações para este planejamento" MaxLength="1000" AutoSize="TextChanges" MinimumHeightRequest="65" AutomationId="plan_notes" />
                     </VerticalStackLayout>
                 </Border>
-                <HorizontalStackLayout x:Name="FavoritePanel" Spacing="8">
+                <HorizontalStackLayout Spacing="8">
                     <CheckBox IsChecked="{Binding Favorite, Mode=TwoWay}" />
                     <Label Text="Favorita · aparece primeiro na lista" VerticalOptions="Center" />
                 </HorizontalStackLayout>
@@ -49,7 +49,7 @@
                 </VerticalStackLayout>
                 <Button Text="Adicionar exercício" Clicked="OnAdd" Style="{StaticResource SecondaryButton}" AutomationId="plan_add_exercise" />
                 <Label x:Name="ErrorText" TextColor="{StaticResource Error}" IsVisible="False" AutomationId="plan_error" />
-                <Button x:Name="SaveButton" Text="Salvar ficha" Clicked="OnSave" AutomationId="plan_save" />
+                <Button Text="Salvar ficha" Clicked="OnSave" AutomationId="plan_save" />
                 <Button x:Name="ReloadButton" Text="Recarregar ficha" Clicked="OnReload" Style="{StaticResource TextButton}" IsVisible="False" />
                 <Button x:Name="DeleteButton" Text="Excluir ficha" Clicked="OnDelete" Style="{StaticResource TextButton}" TextColor="{StaticResource Error}" IsVisible="False" AutomationId="plan_delete" />
             </VerticalStackLayout>

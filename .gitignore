@@ -3,37 +3,22 @@
 **/.idea/
 **/.vs/
 **/TestResults/
-**/node_modules/
 **/__pycache__/
 **/*.pyc
+**/*.user
+**/*.suo
 .DS_Store
 .env
 .env.*
-!.env.example
-**/appsettings.Local.json
-**/*.user
+.local/
+.scratch/
+artifacts/
+**/*.db
+**/*.db3
+**/*.db3-journal
+**/*.db3-shm
+**/*.db3-wal
 **/*.pfx
 **/*.keystore
 **/*.mobileprovision
-**/*.db
-artifacts/
-.scratch/
-.local/
 src/Workoutly.Mobile/Resources/Images/Exercises/*.png
-
-# Arquivos locais de ferramentas
-/.agents/
-/AGENTS.md
-/GLOSSARY.md
-
-# Manter a entrega mobile, as licenças e os arquivos citados pelo projeto
-/docs/*
-!/docs/mobile-final/
-!/docs/licenses/
-!/docs/mysql.md
-!/docs/catalogo-musculos.json
-
-# Evidência da simplificação local
-!/docs/evidencias/
-/docs/evidencias/*
-!/docs/evidencias/simplificacao-local.md

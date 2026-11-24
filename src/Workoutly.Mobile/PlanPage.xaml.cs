@@ -6,11 +6,11 @@ namespace Workoutly.Mobile;
 
 public partial class PlanPage : ContentPage, IConfirmLeave
 {
-    private readonly TemplateDao _dao;
+    private readonly PlanDao _dao;
     private readonly PlanEditorViewModel _editor;
     private bool _busy, _allowLeave;
 
-    public PlanPage(TemplateDao dao, PlanItem? plan)
+    public PlanPage(PlanDao dao, PlanItem? plan)
     {
         InitializeComponent();
         _dao = dao;
@@ -33,7 +33,7 @@ public partial class PlanPage : ContentPage, IConfirmLeave
         if (_editor.Items.Count >= 50) { ShowError("Use até 50 exercícios."); return; }
         await ExecuteAsync(() => Navigation.PushModalAsync(new PlanExercisePickerPage(_dao,
             _editor.Items.Select(r => r.Exercise.ExerciseId).ToHashSet(), item =>
-            _editor.Items.Add(new(new(item.Id, item.Name, item.MuscleGroup, item.Equipment, item.Description, 3, 10))))));
+            _editor.Items.Add(new(new(item.Id, item.Name, item.MuscleGroup, item.Equipment, 3, 10))))));
     }
 
     private async void OnItemAction(object? sender, EventArgs args)
@@ -52,7 +52,7 @@ public partial class PlanPage : ContentPage, IConfirmLeave
 
     private async void OnSave(object? sender, EventArgs args) => await ExecuteAsync(async () =>
     {
-        await _editor.SaveAsync();
+        _editor.Save();
         _allowLeave = true;
         await Navigation.PopAsync();
         if (Shell.Current.CurrentPage is PlansPage list) list.ShowMessage("Ficha salva neste aparelho");
@@ -60,7 +60,7 @@ public partial class PlanPage : ContentPage, IConfirmLeave
     private async void OnReload(object? sender, EventArgs args) => await ExecuteAsync(async () =>
     {
         if (!await DisplayAlertAsync("Recarregar?", "Substituir os campos pela versão salva?", "Recarregar", "Cancelar")) return;
-        _editor.Fill(await _editor.ReloadAsync());
+        _editor.Fill(_editor.Reload());
         BindEditor();
         _editor.Remember();
     });
@@ -68,7 +68,7 @@ public partial class PlanPage : ContentPage, IConfirmLeave
     {
         var question = "Excluir ficha deste aparelho?";
         if (!await DisplayAlertAsync(question, _editor.Name, "Excluir", "Cancelar")) return;
-        await _editor.DeleteAsync();
+        _editor.Delete();
         _allowLeave = true;
         await Navigation.PopAsync();
     });

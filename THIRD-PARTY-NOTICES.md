@@ -48,6 +48,7 @@ Os 20 novos arquivos foram incorporados sem alterações. O ícone `exercise_gen
 
 ## Trabalho Final Mobile
 
-A cópia deriva do código de pedrobaldi01/Workoutly (45d880a). A integração da API também consultou JoaoAza/Workoutly-API (c7835b3). Os créditos de design, imagens e fontes do PI permanecem acima.
+A cópia local deriva de pedrobaldi01/Workoutly (45d880a). A identidade visual mantém as contribuições do grupo do PI.
 
-O DAO usa sqlite-net-pcl 1.11.285, de Frank A. Krueger e colaboradores (MIT, docs/licenses/SQLite-net-LICENSE.txt). As dependências transitivas são restauradas pelo NuGet com seus metadados de licença.
+- [Inter 4.1](https://github.com/rsms/inter/releases/tag/v4.1), de Rasmus Andersson, sob SIL Open Font License. Consulte [Inter-LICENSE.txt](docs/licenses/Inter-LICENSE.txt).
+- sqlite-net-pcl 1.11.285, de Frank A. Krueger e colaboradores, sob MIT. Consulte [SQLite-net-LICENSE.txt](docs/licenses/SQLite-net-LICENSE.txt). O NuGet restaura as dependências transitivas com seus metadados de licença.

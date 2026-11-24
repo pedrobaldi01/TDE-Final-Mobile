@@ -8,7 +8,7 @@ public partial class PlanExercisePickerPage : ContentPage
     private readonly Action<ExerciseItem> _onSelect;
     private readonly CatalogViewModel _model;
     private bool _busy;
-    public PlanExercisePickerPage(TemplateDao dao, HashSet<string> selected, Action<ExerciseItem> onSelect)
+    public PlanExercisePickerPage(PlanDao dao, HashSet<string> selected, Action<ExerciseItem> onSelect)
     {
         InitializeComponent(); BindingContext = _model = new(dao, selected); _onSelect = onSelect;
     }

@@ -8,7 +8,7 @@ public partial class AppShell : Shell
 	public AppShell()
 	{
         InitializeComponent();
-        var dao = new TemplateDao(FileSystem.AppDataDirectory);
+        var dao = new PlanDao(FileSystem.AppDataDirectory);
         HomeContent.ContentTemplate = new DataTemplate(() => new MainPage());
         PlansContent.ContentTemplate = new DataTemplate(() => new PlansPage(dao));
     }

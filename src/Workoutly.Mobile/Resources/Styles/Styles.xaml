@@ -107,7 +107,6 @@
         <Setter Property="Padding" Value="16" />
     </Style>
     <Style TargetType="ActivityIndicator"><Setter Property="Color" Value="{StaticResource Accent}" /></Style>
-    <Style TargetType="Switch"><Setter Property="OnColor" Value="{StaticResource Accent}" /></Style>
     <Style TargetType="RadioButton">
         <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
         <Setter Property="FontFamily" Value="InterRegular" />

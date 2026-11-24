@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace Workoutly.Mobile;
 
 public static class MauiProgram
@@ -37,10 +35,6 @@ public static class MauiProgram
             handler.PlatformView.SetPadding(0, 0, 0, 0);
 #endif
         });
-
-#if DEBUG
-		builder.Logging.AddDebug();
-#endif
 
 		return builder.Build();
 	}

@@ -4,10 +4,10 @@ using Workoutly.Mobile.Models;
 namespace Workoutly.Mobile.Data;
 
 // Um arquivo local por instalação; toda conexão habilita as chaves estrangeiras.
-public sealed class TemplateDao
+public sealed class PlanDao
 {
     private readonly string _path;
-    public TemplateDao(string directory)
+    public PlanDao(string directory)
     {
         _path = Path.Combine(directory, "workoutly.db3");
         using var db = Open();
@@ -24,7 +24,7 @@ public sealed class TemplateDao
                   PRIMARY KEY(ModelId, Position), UNIQUE(ModelId, ExerciseId))
                 """);
             if (db.ExecuteScalar<int>("SELECT count(*) FROM ExercicioLocal") > 0) return;
-            using var source = typeof(TemplateDao).Assembly.GetManifestResourceStream("Workoutly.SharedExercises")!;
+            using var source = typeof(PlanDao).Assembly.GetManifestResourceStream("Workoutly.SharedExercises")!;
             using var reader = new StreamReader(source);
             while (reader.ReadLine() is { } line)
                 db.Execute("INSERT INTO ExercicioLocal VALUES (?,?,?,?)", line.Split('\t').Cast<object>().ToArray());
@@ -38,11 +38,11 @@ public sealed class TemplateDao
         return db;
     }
 
-    public PlanExerciseItem[] Catalog()
+    public ExerciseItem[] Catalog()
     {
         using var db = Open();
-        return db.Query<ItemRow>("SELECT Id AS ExerciseId, Name, MuscleGroup, Equipment, 3 AS Sets, 10 AS Repetitions FROM ExercicioLocal ORDER BY Name")
-            .Select(row => row.ToItem()).ToArray();
+        return db.Query<ItemRow>("SELECT Id AS ExerciseId, Name, MuscleGroup, Equipment FROM ExercicioLocal ORDER BY Name")
+            .Select(row => new ExerciseItem(row.ExerciseId, row.Name, row.MuscleGroup, row.Equipment)).ToArray();
     }
 
     public PlanItem[] List()
@@ -90,7 +90,7 @@ public sealed class TemplateDao
 
     private static void CheckVersion(int changed)
     {
-        if (changed != 1) throw new InvalidOperationException("A ficha foi alterada ou excluído. Reabra a lista.");
+        if (changed != 1) throw new InvalidOperationException("A ficha foi alterada ou excluída. Reabra a lista.");
     }
 
     private sealed class Header
@@ -112,6 +112,6 @@ public sealed class TemplateDao
         public int Sets { get; set; }
         public int Repetitions { get; set; }
         public int? WeightCents { get; set; }
-        public PlanExerciseItem ToItem() => new(ExerciseId, Name, MuscleGroup, Equipment, "", Sets, Repetitions, WeightCents / 100m);
+        public PlanExerciseItem ToItem() => new(ExerciseId, Name, MuscleGroup, Equipment, Sets, Repetitions, WeightCents / 100m);
     }
 }

@@ -43,7 +43,7 @@ def page(number, title, subtitle):
     c.line(42, 40, W-42, 40)
     c.setFillColor(MUTED)
     c.setFont('Helvetica', 8)
-    c.drawString(42, 25, 'Versão 0.13.0 | 22/11/2026 | Base: backup 498005d')
+    c.drawString(42, 25, 'Versão 0.13.0 | Revisão em 23/11/2026')
     c.drawRightString(W-42, 25, str(number))
 
 def screen(filename, x, y, height):
@@ -55,7 +55,7 @@ page(1, 'Planejamento local do aluno', 'Quatro telas. SQLite no aparelho. Sem co
 y=text('O Workoutly permite criar, consultar, editar e excluir fichas com exercícios, séries, repetições e cargas de referência. A simplificação retirou professor, vínculo, autenticação, execução e histórico de treinos, além da API e do MySQL.',42,H-119,W-84)
 y=text('<b>Fluxo:</b> Início → Minhas fichas → Criação/edição → Seleção de exercícios (modal). O seletor retorna ao editor ao incluir ou cancelar. Menu lateral e abas levam aos mesmos destinos.',42,y-16,W-84)
 y=text('<b>Organização do código</b>',42,y-23,W-84)
-rows=[['Camada','Responsabilidade'],['View (XAML / code-behind)','Interface, diálogos e navegação.'],['ViewModels','Campos, validação, busca e filtro de favoritas.'],['Models','Ficha, exercício e item do planejamento.'],['TemplateDao','SQLite: consulta, transação e exclusão em cascata.']]
+rows=[['Camada','Responsabilidade'],['View (XAML / code-behind)','Interface, diálogos e navegação.'],['ViewModels','Campos, validação, busca e filtro de favoritas.'],['Models','Ficha, exercício e item do planejamento.'],['PlanDao','SQLite: consulta, transação e exclusão em cascata.']]
 rows=[[Paragraph(cell,small) for cell in row] for row in rows]
 t=Table(rows,colWidths=[160,W-244]);t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),GREEN),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),9),('RIGHTPADDING',(0,0),(-1,-1),9),('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),8),('LINEBELOW',(0,0),(-1,-1),0.4,HexColor('#DCE3DD'))]));_,th=t.wrap(W-84,H);t.drawOn(c,42,y-th-8);y-=th+29
 y=text('<b>Três tabelas SQLite</b><br/>ModeloFicha guarda nome, observações, favorito e versão. ExercicioLocal contém 30 exercícios de referência. ItemModelo liga ficha e exercício e guarda ordem, séries, repetições e carga em centésimos de kg. O arquivo privado workoutly.db3 pertence à instalação.',42,y,W-84)

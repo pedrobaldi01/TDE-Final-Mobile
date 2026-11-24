@@ -16,12 +16,12 @@ Versão 0.13.0, simplificada a partir de `498005d` em 22/11/2026. Quatro telas: 
 | Flyout, p. 1 | Shell com menu lateral | Abrir menu e escolher Início ou Minhas fichas. |
 | Navigation Pages, p. 1 | Pilha do Shell: PlansPage → PlanPage | Abrir e voltar; confirmar descarte se houver alterações. |
 | Tabbed Pages, p. 1 | Shell com Tab Início e Tab Fichas | Alternar as abas. |
-| Demais exemplos da turma, p. 1 | Não delimitados pelo enunciado disponível | O material externo da turma não foi revalidado; não se afirma cobertura de todos os exemplos. |
-| CRUD, pp. 1-2 | PlanEditorViewModel + TemplateDao | Criar, listar, editar e excluir uma ficha. |
+| Demais exemplos da turma, p. 1 | Não delimitados pelo enunciado disponível | Os slides 10–11 de MAUI_01 mostram outros controles, como Picker, DatePicker e Switch. O enunciado não define um subconjunto obrigatório para este app. |
+| CRUD, pp. 1-2 | PlanEditorViewModel + PlanDao | Criar, listar, editar e excluir uma ficha. |
 | Persistência no aparelho, p. 2 | workoutly.db3 em AppDataDirectory | Encerrar o processo, reabrir e recuperar a ficha. |
 | Três tabelas, p. 2 | ModeloFicha, ExercicioLocal, ItemModelo | Ficha e catálogo ligados pelos itens. |
 | Texto, número e booleano, p. 2 | Nome; séries/repetições/carga; favorito | Alterar os valores, salvar e reabrir. Favorito também filtra e ordena a lista. |
-| DAO, p. 2 | Data/TemplateDao.cs | Save usa transação; Delete remove itens por cascata. |
+| DAO, p. 2 | Data/PlanDao.cs | Save usa transação; Delete remove itens por cascata. |
 | Tela inicial e navegação, p. 2 | MainPage e AppShell | Abrir fichas pelo botão, aba ou menu. |
 | Cadastros com validação, p. 2 | PlanEditorViewModel e ExerciseFields | Nome vazio, ficha sem exercício ou séries fora de 1-20 são recusados. |
 | Pesquisa em tempo real, p. 2 | PlansViewModel e CatalogViewModel | Digitar parte do nome sem botão Buscar. |
@@ -33,6 +33,8 @@ Versão 0.13.0, simplificada a partir de `498005d` em 22/11/2026. Quatro telas: 
 | Envio e apresentação, p. 3 | A cargo do aluno | Compactar e enviar à disciplina; não houve publicação automática. |
 
 **Equivalências a confirmar na avaliação:** o projeto utiliza Shell para menu, abas e pilha, não as classes literais FlyoutPage, TabbedPage e NavigationPage. CollectionView e Image são os controles MAUI equivalentes aos exemplos Android. A confirmação temporária é uma faixa XAML, sem plugin de Snackbar. Isso já fazia parte da adaptação; não é comprovação de aceitação pelo professor.
+
+O enunciado foi conferido no arquivo `Drive/Trabalho Final - Mobile.pdf`, páginas 1–3, na pasta compartilhada da disciplina. A comparação também usou `MAUI_01.pptx`, slides 9–11, e os exemplos `JSON_App` e `RadioButtons.rar`.
 
 ## Fluxo e persistência
 
