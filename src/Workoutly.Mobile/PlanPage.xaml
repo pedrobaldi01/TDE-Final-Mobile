@@ -21,9 +21,8 @@
                 </Border>
                 <HorizontalStackLayout x:Name="FavoritePanel" Spacing="8">
                     <CheckBox IsChecked="{Binding Favorite, Mode=TwoWay}" />
-                    <Label Text="Favorito · aparece primeiro na lista" VerticalOptions="Center" />
+                    <Label Text="Favorita · aparece primeiro na lista" VerticalOptions="Center" />
                 </HorizontalStackLayout>
-                <Button x:Name="UseTemplate" Text="Usar modelo nesta ficha" Clicked="OnUseTemplate" Style="{StaticResource SecondaryButton}" />
                 <Label Text="{Binding Items.Count, StringFormat='Exercícios ({0})'}" Style="{StaticResource Eyebrow}" />
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Items}" Spacing="12">
                     <BindableLayout.ItemTemplate>

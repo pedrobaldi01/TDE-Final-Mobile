@@ -2,6 +2,9 @@
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
     <Compile Include="../../src/Workoutly.Mobile/Models/PlanItem.cs" />
+    <Compile Include="../../src/Workoutly.Mobile/Services/ExerciseVisuals.cs" />
+    <Compile Include="../../src/Workoutly.Mobile/ViewModels/ListViewModels.cs" />
+    <Compile Include="../../src/Workoutly.Mobile/ViewModels/PlanEditorViewModel.cs" />
     <Compile Include="../../src/Workoutly.Mobile/Data/TemplateDao.cs" />
     <EmbeddedResource Include="../../src/Workoutly.Mobile/Data/shared-exercises.tsv" LogicalName="Workoutly.SharedExercises" />
     <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />

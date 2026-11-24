@@ -1,16 +1,16 @@
 using Workoutly.Mobile.ViewModels;
-using Workoutly.Mobile.Services;
+using Workoutly.Mobile.Models;
+using Workoutly.Mobile.Data;
 namespace Workoutly.Mobile;
 
 public partial class PlanExercisePickerPage : ContentPage
 {
-    private readonly AccountClient _accounts;
     private readonly Action<ExerciseItem> _onSelect;
     private readonly CatalogViewModel _model;
     private bool _busy;
-    public PlanExercisePickerPage(AccountClient accounts, HashSet<string> selected, Action<ExerciseItem> onSelect, bool local = false)
+    public PlanExercisePickerPage(TemplateDao dao, HashSet<string> selected, Action<ExerciseItem> onSelect)
     {
-        InitializeComponent(); _accounts = accounts; BindingContext = _model = new(accounts, selected, local); _onSelect = onSelect;
+        InitializeComponent(); BindingContext = _model = new(dao, selected); _onSelect = onSelect;
     }
     protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
     private async Task LoadAsync()
@@ -24,11 +24,7 @@ public partial class PlanExercisePickerPage : ContentPage
             await _model.LoadAsync(); ExerciseList.IsVisible = true;
             RefreshButton.Text = "Atualizar"; ListStatus.Text = "Toque para incluir. Exercícios já adicionados ficam ocultos.";
         }
-        catch (SessionExpiredException exception)
-        {
-            await DisplayAlertAsync("Acesso", exception.Message, "OK"); await Navigation.PopModalAsync();
-        }
-        catch (Exception exception) when (exception is AccountException or SQLite.SQLiteException or IOException)
+        catch (Exception exception) when (exception is SQLite.SQLiteException or IOException)
         {
             ErrorText.Text = exception.Message; ErrorText.IsVisible = true;
             ListStatus.Text = "Lista não carregada."; RefreshButton.Text = "Tentar novamente";

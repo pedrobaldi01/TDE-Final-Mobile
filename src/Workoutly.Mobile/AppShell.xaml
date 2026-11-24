@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Shell
-    x:Class="Workoutly.Mobile.AppShell"
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:Workoutly.Mobile"
-    Title="Workoutly" FlyoutBehavior="Disabled">
-
-    <FlyoutItem x:Name="WorkspaceItem" Title="Área de treino" Route="area">
-        <Tab Title="Início" Route="inicio">
-            <ShellContent Title="Início" ContentTemplate="{DataTemplate local:MainPage}" Route="conta" />
-        </Tab>
+<Shell x:Class="Workoutly.Mobile.AppShell" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" Title="Workoutly" FlyoutBehavior="Flyout">
+    <FlyoutItem x:Name="WorkspaceItem" Title="Workoutly" Route="area">
+        <Tab Title="Início" Route="inicio"><ShellContent x:Name="HomeContent" Title="Início" Route="home" /></Tab>
+        <Tab Title="Fichas" Route="fichas"><ShellContent x:Name="PlansContent" Title="Minhas fichas" Route="lista" /></Tab>
     </FlyoutItem>
+    <MenuItem Text="Início" Clicked="OnHome" />
+    <MenuItem Text="Minhas fichas" Clicked="OnPlans" />
 </Shell>

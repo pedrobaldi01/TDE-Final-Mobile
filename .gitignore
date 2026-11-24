@@ -32,3 +32,8 @@ src/Workoutly.Mobile/Resources/Images/Exercises/*.png
 !/docs/licenses/
 !/docs/mysql.md
 !/docs/catalogo-musculos.json
+
+# Evidência da simplificação local
+!/docs/evidencias/
+/docs/evidencias/*
+!/docs/evidencias/simplificacao-local.md

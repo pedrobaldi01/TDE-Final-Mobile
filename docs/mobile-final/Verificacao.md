@@ -1,45 +1,77 @@
-# Origem, implementação e verificação · 22/11/2026
+# Verificação da versão local - 22/11/2026
 
-## Origem e escopo
+## Base e decisão
 
-| Fonte consultada | Branch | Commit conferido | O que sustenta |
-|---|---|---|---|
-| [Aplicativo e API incluída](https://github.com/pedrobaldi01/Workoutly) | documentacao/situacao-fase-2 | `45d880a75ad236070783714789b73ae1933594e4` | README, AGENTS.md, documentação de arquitetura, backlog, páginas MAUI e API com MySqlConnector. |
-| [API separada](https://github.com/JoaoAza/Workoutly-API) | main | `c7835b3c19f1c429be360038e361afeb35d2e0f3` | Implementação ASP.NET Core com PostgreSQL. O contrato inclui dados físicos e cargas. |
+Árvore inicial limpa no commit `498005d` (backup). A simplificação foi feita nesta pasta, sem restaurar o PI. O aplicativo 0.13.0 mantém somente planejamento local do aluno em quatro telas. SQLite é o armazenamento final; não é cache de um servidor. Não há conta, papel, vínculo, publicação de ficha, execução ou histórico de treino.
 
-Na origem, `AccountClient.cs` enviava requisições para `https://workoutly-api.onrender.com/`. Esse endereço por si só não identifica o commit em produção nem o banco conectado. A cópia usa a API MySQL que acompanha a solução e traz a migração 011. O app local lê o endereço de `Services/ApiSettings.cs`.
+Foram removidos o projeto da API, seus testes, cliente HTTP, configurações de rede permissiva, scripts MySQL e Compose. A solução contém o app MAUI e a suíte local. Os documentos acadêmicos na pasta superior e os arquivos de bancos antigos por conta não foram alterados. O novo arquivo é `workoutly.db3`, privado da instalação.
 
-A cópia começou com a exportação dos arquivos versionados. A árvore Git da branch local `origem-pi` corresponde à da origem, inclusive créditos e licenças. O primeiro commit local é `e7f85cc`. A pasta de trabalho e a raiz Git foram conferidas antes da edição. O resultado de `git remote -v` era vazio. As adaptações estão em `trabalho-final-mobile`. Para revisar apenas o que mudou, use `git diff --stat origem-pi..trabalho-final-mobile`.
+## Conceito e implementação
 
-## Acompanhar a ficha
+- **Model:** `Models/PlanItem.cs` define ficha, exercício e item do planejamento.
+- **ViewModel:** valida campos, controla pesquisa e favoritas e chama o DAO. O editor usa bindings de duas vias e coleção observável; o code-behind apresenta diálogos e navega.
+- **DAO:** `TemplateDao` concentra SQLite. Três tabelas: `ModeloFicha`, `ExercicioLocal`, `ItemModelo`. As chaves estrangeiras são habilitadas em cada conexão. Cabeçalho e itens são salvos em transação; excluir ficha elimina seus itens por cascata. O catálogo permanece disponível.
+- **View:** início, lista, editor e seletor modal. O Shell mantém menu lateral, duas abas e pilha de navegação. A confirmação de descarte continua em IConfirmLeave. Erros de validação são revelados por FormFeedback.
 
-| Passo | Tela e código | Destino dos dados |
-|---|---|---|
-| Professor seleciona um aluno vinculado | ConnectionsPage → PlansPage → PlanPage. A página recebe o ID selecionado. | A API consulta o vínculo ativo. |
-| Professor toca em Salvar ficha | PlanPage.OnSave → PlanEditorViewModel.SaveAsync → AccountClient.SavePlanAsync → PlanEndpoints → PlanService. | POST ou PUT em `/teaching/students/{studentId}/plans` ou `…/plans/{id}`. MySQL mantém workout_plans, workout_plan_versions e workout_plan_items. |
-| Aluno consulta e inicia | PlansPage carrega a lista. Iniciar treino busca a ficha corrente em `GET /plans/{id}` e abre WorkoutPage. | As séries previstas são preparadas em memória. |
-| Aluno registra séries | WorkoutPage lê as séries marcadas, valida repetições/cargas e chama AccountClient. WorkoutEndpoints delega a WorkoutService. | `POST /sessions` grava workout_sessions e workout_session_sets com a revisão usada. |
-| Ambos consultam a evolução | WorkoutsPage e WorkoutDetailsPage → AccountClient → WorkoutHistoryService. | `GET /history` para o aluno e `GET /teaching/students/{studentId}/history` para o professor vinculado. A consulta de detalhes do professor é de leitura. |
-| Conta salva um modelo privado | Mesmo editor → PlanEditorViewModel → TemplateDao. | SQLite do aparelho. A ação Usar modelo preenche os campos da ficha atual e mantém a identidade desta. O envio ocorre ao salvar a ficha. |
+O favorito é booleano com efeito real na ordenação e no filtro **Todas / Só favoritas**. Pesquisa e filtro se combinam. Não há fichas fictícias pré-carregadas; somente o catálogo de referência com 30 exercícios.
 
-## O que ficou mais simples
+## Testes automatizados
 
-- A lista e o formulário de fichas também demonstram o CRUD local. O modo selecionado determina onde salvar. A View apresenta perguntas e feedback. A ViewModel valida o nome e as metas de cada exercício. O DAO executa toda a transação local.
-- `ViewModels/ListViewModels.cs` centraliza a pesquisa do catálogo e do seletor. Ambos atualizam a lista pelo texto digitado. O seletor exclui exercícios já incluídos na ficha.
-- O registro e a correção de sessões reutilizam `WorkoutSetItem.FromFields` para converter e validar repetições e carga.
-- Os créditos exibidos no aplicativo e os distribuídos no ZIP agora vêm do mesmo arquivo. O projeto MAUI empacota o aviso da raiz.
-- O catálogo dos modelos usa os identificadores dos 30 exercícios compartilhados da origem. A associação local dispensa copiar usuários, vínculos, sessões e históricos para o aparelho.
+Comando: `~/.dotnet/dotnet run --project tests/Workoutly.Local.Tests -p:NuGetAudit=false`.
 
-## Evidências e limites
+Resultado: **nove verificações passaram**, com diretório temporário e dados fictícios:
 
-| Verificação | Resultado |
-|---|---|
-| Compilação | API, testes, Android .NET 10 (APK Debug) e iOS Simulator arm64 compilaram. A compilação de iOS neste ambiente usou o linker no processo e assinatura local ad hoc para o simulador. |
-| SQLite real, testes automatizados | Seis verificações passaram. Criação e reabertura, isolamento de contas, edição com versão, rollback por chave estrangeira inválida, recusa de exclusão com versão antiga e exclusão confirmada. O teste usa o mesmo arquivo-fonte do DAO que o app. |
-| SQLite real, interface iOS | Criado modelo com exercício, marcado favorito e salvo. Após encerrar e reabrir o app, a busca encontrou o modelo. As repetições passaram de 10 para 12. Cancelar a exclusão preservou os dados e confirmar removeu o modelo. O professor salvou outro modelo privado e o aluno, na mesma instalação de teste, viu a própria lista vazia. Voltar da ficha modificada exibiu a confirmação de descarte. Cancelar no seletor manteve o editor com zero exercícios. O formulário recusou um nome vazio. Ao salvar, a lista exibiu a faixa temporária de confirmação. |
-| Aproveitamento do modelo | Na interface do professor, selecionar o modelo copiou as metas para o editor da ficha. Na interface do aluno, a execução permitiu marcar uma série. As respostas HTTP para os dados autenticados vieram de uma compilação separada de teste. O SQLite e a interface usados nessa compilação são os mesmos do projeto entregue. |
-| HTTP da API | Quinze casos da suíte existente passaram no processo com TestServer. Cobriram validação de cadastro, autenticação requerida, limitação de tentativas, liveness e readiness. Foi necessário executar os métodos com suas entradas diretamente porque o transporte do VSTest não conseguiu abrir socket neste ambiente. |
-| Online com banco e usuários independentes | Tentado com o roteiro automatizado da entrega. O MySQL 9.6.0 encerrou em `--initialize-insecure` (saída 2, sinal 11 no log interno). O daemon do Docker estava indisponível. A primeira chamada HTTP de cadastro encontrou `Permission denied (localhost:5186)`. Por isso, a migração 011, a publicação da ficha, o registro da sessão, o histórico compartilhado e a negativa para outro professor ainda precisam ser executados com a instância isolada. A consistência das rotas e as verificações de vínculo foram conferidas por leitura. |
-| Aparelhos | A interface foi executada no iPhone simulado. O Android foi compilado. ADB falhou ao iniciar o listener com `Operation not permitted`. A troca de dados entre dois aparelhos físicos está pendente. |
+1. Criar ficha e recuperar os mesmos campos por nova instância do DAO.
+2. Alterar exercícios e recuperar a versão 2.
+3. Falha de chave estrangeira reverte a transação inteira.
+4. Exclusão com versão antiga preserva o registro atual.
+5. Todas mostra duas fichas.
+6. Só favoritas mostra apenas a favorita.
+7. Pesquisa de ficha não favorita não fura o filtro de favoritas.
+8. Voltar a Todas preserva a pesquisa e recupera o item esperado.
+9. Excluir deixa a lista vazia.
 
-O PDF da disciplina tem três páginas. A matriz está em `Requisitos.md`. A cópia local dos materiais da turma inclui `MAUI_01.pptx`. O enunciado remete também aos demais exemplos do Drive, sem fixar um inventário fechado. Cabe ao professor confirmar a equivalência das abas, pilha e menu lateral do Shell com as classes dos exemplos da disciplina. O app não produz documentos impressos.
+O teste do filtro foi executado antes da implementação: falhou por ausência de `OnlyFavorites`. Após implementar a propriedade, a suíte passou. Os testes acessam interfaces públicas do DAO e da ViewModel, usando SQLite real, sem MySQL ou mocks. A auditoria NuGet foi desativada neste comando; não representa auditoria de vulnerabilidades.
+
+## Compilação iOS
+
+- SDK .NET 10.0.401 do diretório `~/.dotnet`; MAUI 10.0.110.
+- Comando: `~/.dotnet/dotnet build src/Workoutly.Mobile/Workoutly.Mobile.csproj -f net10.0-ios -p:RuntimeIdentifier=iossimulator-arm64 -p:NuGetAudit=false`.
+- Resultado: **êxito, zero avisos e zero erros**.
+
+## Compilação Android
+
+- SDK Android em `~/Library/Developer/Android/sdk`, JDK 21 em `/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home`.
+- Comando: `~/.dotnet/dotnet build src/Workoutly.Mobile/Workoutly.Mobile.csproj -f net10.0-android -p:JavaSdkDirectory=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home -p:AndroidSdkDirectory=/Users/pedrobaldi/Library/Developer/Android/sdk -p:NuGetAudit=false`.
+- Resultado: **êxito, um aviso XA0033 e zero erros**. O tooling não interpretou o número de versão `21.0.13.0.2` do Java instalado. O aviso não impediu a compilação.
+- Execução Android e dispositivo físico não foram testados.
+
+## Fluxo no iOS Simulator
+
+Aplicativo instalado e executado em **iPhone 18 Pro Simulator, iOS 27.0, arm64**. Dados fictícios: “Ficha A - Peito” com “Supino com halteres”. Verificações observadas na interface:
+
+- Início sem login → botão Abrir minhas fichas → lista inicialmente vazia.
+- Nova ficha → Salvar sem nome → erro visível de 2 a 120 caracteres.
+- Nome preenchido e favorita marcada → seletor modal → pesquisa “supino” mostra três resultados → Incluir retorna ao editor com um exercício.
+- Salvar retorna à lista, que mostra uma ficha, três séries e confirmação temporária.
+- Alternar Só favoritas mantém a ficha favorita visível.
+- Reabrir, mudar de três para quatro séries e desmarcar favorita → salvar → desaparece de Só favoritas; Todas mostra a ficha com quatro séries.
+- Digitar “inexistente” apresenta vazio de pesquisa, sem erro de carregamento.
+- Encerrar o processo e relançar → lista recupera a ficha com quatro séries.
+- Excluir ficha → Cancelar mantém o editor e o registro; repetir e confirmar Excluir retorna à lista vazia.
+- Menu lateral abre e o destino Início retorna à tela inicial. As abas Início/Fichas estão presentes e a aba Fichas acompanha a navegação.
+- Uma tentativa de retorno durante edição exibiu “Descartar alterações?”; Continuar editando preservou os campos.
+
+Os botões inferiores do editor exigem rolagem quando o conteúdo excede a tela. As capturas não são mockups; ficam em `capturas-finais/`. O PDF foi regenerado dessas imagens e conferido por renderização. As capturas antigas foram retiradas desta entrega; continuam no backup Git.
+
+## Limites
+
+Não foram realizadas avaliação com participantes, publicação, envio à disciplina, teste Android em execução, teste em aparelho físico ou auditoria de dependências. O material externo da turma não foi revalidado. Shell, CollectionView e Image são equivalências MAUI dos componentes do enunciado; a aceitação das classes de navegação deve ser confirmada pelo professor, conforme Requisitos.md. A execução observada foi local; não foi necessário iniciar ou escrever em API alguma.
+
+## Rechecagem solicitada em 22/11/2026
+
+A revisão estática do escopo e dos padrões não identificou defeitos confirmados. Permanecem as duas ressalvas acadêmicas acima: equivalência do Shell e material externo da turma não delimitado.
+
+Os nove testes foram reexecutados com sucesso. O build iOS voltou a passar sem avisos ou erros. Os builds inicialmente simultâneos disputaram `obj/project.assets.json`; a repetição isolada do Android passou, com o mesmo aviso XA0033 e nenhum erro. Não houve alteração de código nesta rechecagem.
+
+No simulador, foram repetidos início → lista → editor → seletor, cancelamento do seletor preservando o nome, recusa de ficha sem exercícios, inclusão de exercício, salvamento, reabertura e exclusão confirmada. A ficha fictícia “Conferencia local” foi excluída ao concluir o teste. A execução Android continua não verificada.

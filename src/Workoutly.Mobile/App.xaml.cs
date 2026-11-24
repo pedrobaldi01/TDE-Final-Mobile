@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace Workoutly.Mobile;
 
 public partial class App : Application

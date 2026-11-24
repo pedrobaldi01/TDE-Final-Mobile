@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
-using Workoutly.Mobile.Services;
+using Workoutly.Mobile.Models;
+using Workoutly.Mobile.Data;
 
 namespace Workoutly.Mobile.ViewModels;
 
@@ -18,36 +19,33 @@ public abstract class SearchList : INotifyPropertyChanged
     protected void Refresh() => PropertyChanged?.Invoke(this, new(null));
 }
 
-public sealed class PlansViewModel(AccountClient accounts, string? student, bool local) : SearchList
+public sealed class PlansViewModel(TemplateDao dao) : SearchList
 {
     private PlanItem[] _plans = [];
-    public PlanItem[] Visible => _plans.Where(p => Matches(p.Name)).ToArray();
-    public async Task LoadAsync()
+    private bool _onlyFavorites;
+    public bool OnlyFavorites
     {
-        _plans = [];
+        get => _onlyFavorites;
+        set { _onlyFavorites = value; Refresh(); }
+    }
+    public PlanItem[] Visible => _plans.Where(p => (!OnlyFavorites || p.Favorite) && Matches(p.Name)).ToArray();
+    public Task LoadAsync()
+    {
+        _plans = dao.List();
         Refresh();
-        _plans = local ? accounts.Templates.List() : await accounts.GetPlansAsync(student);
-        Refresh();
+        return Task.CompletedTask;
     }
 }
 
-public sealed class CatalogViewModel(AccountClient accounts, HashSet<string>? excluded = null, bool local = false) : SearchList
+public sealed class CatalogViewModel(TemplateDao dao, HashSet<string> excluded) : SearchList
 {
     private ExerciseItem[] _catalog = [];
-    private bool _onlyMine;
-    public bool OnlyMine
+    public ExerciseItem[] Visible => _catalog.Where(e => !excluded.Contains(e.Id) &&
+        Matches($"{e.Name} {e.MuscleGroup} {e.Equipment}")).ToArray();
+    public Task LoadAsync()
     {
-        get => _onlyMine;
-        set { _onlyMine = value; Refresh(); }
-    }
-    public ExerciseItem[] Visible => _catalog.Where(e => (excluded is null || !excluded.Contains(e.Id)) &&
-        (!OnlyMine || e.IsMine) && Matches($"{e.Name} {e.MuscleGroup} {e.Equipment}")).ToArray();
-    public async Task LoadAsync()
-    {
-        _catalog = [];
+        _catalog = dao.Catalog().Select(e => new ExerciseItem(e.ExerciseId, e.Name, e.MuscleGroup, e.Equipment, e.Description)).ToArray();
         Refresh();
-        _catalog = local ? accounts.Templates.Catalog().Select(e => new ExerciseItem(e.ExerciseId, e.Name, e.MuscleGroup, e.Equipment, e.Description, true)).ToArray()
-            : await accounts.GetExercisesAsync();
-        Refresh();
+        return Task.CompletedTask;
     }
 }

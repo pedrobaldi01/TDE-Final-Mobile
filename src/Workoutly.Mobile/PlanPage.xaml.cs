@@ -1,29 +1,26 @@
-using Workoutly.Mobile.Services;
+using Workoutly.Mobile.Models;
+using Workoutly.Mobile.Data;
 using Workoutly.Mobile.ViewModels;
 
 namespace Workoutly.Mobile;
 
 public partial class PlanPage : ContentPage, IConfirmLeave
 {
-    private readonly AccountClient _accounts;
+    private readonly TemplateDao _dao;
     private readonly PlanEditorViewModel _editor;
     private bool _busy, _allowLeave;
 
-    public PlanPage(AccountClient accounts, string? studentId, PlanItem? plan, bool local = false)
+    public PlanPage(TemplateDao dao, PlanItem? plan)
     {
         InitializeComponent();
-        _accounts = accounts;
-        _editor = new(accounts, studentId, local);
-        if (plan is not null) _editor.Fill(plan, false);
+        _dao = dao;
+        _editor = new(dao);
+        if (plan is not null) _editor.Fill(plan);
         _editor.Remember();
         BindEditor();
-        Title = local ? "Modelo no aparelho" : "Ficha de treino";
-        Heading.Text = local ? (plan is null ? "Novo modelo" : "Editar modelo") : (plan is null ? "Nova ficha" : "Editar ficha");
-        UseTemplate.IsVisible = !local;
-        FavoritePanel.IsVisible = local;
+        Title = "Ficha";
+        Heading.Text = plan is null ? "Nova ficha" : "Editar ficha";
         DeleteButton.IsVisible = ReloadButton.IsVisible = plan is not null;
-        if (local) { ReloadButton.Text = "Recarregar modelo"; DeleteButton.Text = "Excluir modelo"; }
-        SaveButton.Text = local ? "Salvar modelo" : "Salvar ficha";
         FormFeedback.FollowError(PageScroll, ErrorText);
     }
 
@@ -34,21 +31,10 @@ public partial class PlanPage : ContentPage, IConfirmLeave
     private async void OnAdd(object? sender, EventArgs args)
     {
         if (_editor.Items.Count >= 50) { ShowError("Use até 50 exercícios."); return; }
-        await ExecuteAsync(() => Navigation.PushModalAsync(new PlanExercisePickerPage(_accounts,
+        await ExecuteAsync(() => Navigation.PushModalAsync(new PlanExercisePickerPage(_dao,
             _editor.Items.Select(r => r.Exercise.ExerciseId).ToHashSet(), item =>
-            _editor.Items.Add(new(new(item.Id, item.Name, item.MuscleGroup, item.Equipment, item.Description, 3, 10))), _editor.Local)));
+            _editor.Items.Add(new(new(item.Id, item.Name, item.MuscleGroup, item.Equipment, item.Description, 3, 10))))));
     }
-
-    private async void OnUseTemplate(object? sender, EventArgs args) => await ExecuteAsync(async () =>
-    {
-        if ((_editor.Items.Count > 0 || !string.IsNullOrWhiteSpace(_editor.Name) || !string.IsNullOrWhiteSpace(_editor.Notes)) &&
-            !await DisplayAlertAsync("Preencher com modelo?", "Ao escolher, os campos serão substituídos. A ficha só muda ao salvar.", "Escolher", "Cancelar")) return;
-        await Navigation.PushModalAsync(new PlansPage(_accounts, local: true, select: template =>
-        {
-            _editor.Fill(template, true);
-            BindEditor();
-        }));
-    });
 
     private async void OnItemAction(object? sender, EventArgs args)
     {
@@ -69,18 +55,18 @@ public partial class PlanPage : ContentPage, IConfirmLeave
         await _editor.SaveAsync();
         _allowLeave = true;
         await Navigation.PopAsync();
-        if (Shell.Current.CurrentPage is PlansPage list) list.ShowMessage(_editor.Local ? "Modelo salvo neste aparelho" : "Ficha salva para o aluno");
+        if (Shell.Current.CurrentPage is PlansPage list) list.ShowMessage("Ficha salva neste aparelho");
     });
     private async void OnReload(object? sender, EventArgs args) => await ExecuteAsync(async () =>
     {
         if (!await DisplayAlertAsync("Recarregar?", "Substituir os campos pela versão salva?", "Recarregar", "Cancelar")) return;
-        _editor.Fill(await _editor.ReloadAsync(), false);
+        _editor.Fill(await _editor.ReloadAsync());
         BindEditor();
         _editor.Remember();
     });
     private async void OnDelete(object? sender, EventArgs args) => await ExecuteAsync(async () =>
     {
-        var question = _editor.Local ? "Excluir modelo deste aparelho?" : "Excluir ficha e preservar os treinos já feitos?";
+        var question = "Excluir ficha deste aparelho?";
         if (!await DisplayAlertAsync(question, _editor.Name, "Excluir", "Cancelar")) return;
         await _editor.DeleteAsync();
         _allowLeave = true;
@@ -95,8 +81,7 @@ public partial class PlanPage : ContentPage, IConfirmLeave
         Loading.IsVisible = Loading.IsRunning = true;
         ErrorText.IsVisible = false;
         try { await action(); }
-        catch (SessionExpiredException e) { await DisplayAlertAsync("Acesso", e.Message, "OK"); _allowLeave = true; await Navigation.PopToRootAsync(); }
-        catch (Exception e) when (e is AccountException or SQLite.SQLiteException or InvalidOperationException or IOException)
+        catch (Exception e) when (e is ArgumentException or SQLite.SQLiteException or InvalidOperationException or IOException)
         { ShowError(e.Message); }
         finally { _busy = false; Form.IsEnabled = true; Loading.IsVisible = Loading.IsRunning = false; }
     }

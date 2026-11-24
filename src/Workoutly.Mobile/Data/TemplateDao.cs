@@ -1,19 +1,15 @@
 using SQLite;
-using System.Security.Cryptography;
-using System.Text;
-using Workoutly.Mobile.Services;
+using Workoutly.Mobile.Models;
 
 namespace Workoutly.Mobile.Data;
 
-// Um arquivo por servidor e conta. Toda conexão habilita as chaves estrangeiras.
+// Um arquivo local por instalação; toda conexão habilita as chaves estrangeiras.
 public sealed class TemplateDao
 {
     private readonly string _path;
-    public TemplateDao(string directory, string server, string owner)
+    public TemplateDao(string directory)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
-        var key = SHA256.HashData(Encoding.UTF8.GetBytes($"{server}\n{owner}"));
-        _path = Path.Combine(directory, $"modelos-{Convert.ToHexString(key)}.db3");
+        _path = Path.Combine(directory, "workoutly.db3");
         using var db = Open();
         db.RunInTransaction(() =>
         {
@@ -60,7 +56,7 @@ public sealed class TemplateDao
                 FROM ItemModelo i JOIN ExercicioLocal e ON e.Id=i.ExerciseId ORDER BY i.Position
                 """).ToLookup(row => row.ModelId, row => row.ToItem());
             result = db.Query<Header>("SELECT * FROM ModeloFicha ORDER BY Favorite DESC, Name COLLATE NOCASE")
-                .Select(h => new PlanItem(h.Id, "", h.Name, h.Notes, h.Version, rows[h.Id].ToArray(), h.Favorite)).ToArray();
+                .Select(h => new PlanItem(h.Id, h.Name, h.Notes, h.Version, rows[h.Id].ToArray(), h.Favorite)).ToArray();
         });
         return result;
     }
@@ -94,7 +90,7 @@ public sealed class TemplateDao
 
     private static void CheckVersion(int changed)
     {
-        if (changed != 1) throw new InvalidOperationException("O modelo foi alterado ou excluído. Reabra a lista.");
+        if (changed != 1) throw new InvalidOperationException("A ficha foi alterada ou excluído. Reabra a lista.");
     }
 
     private sealed class Header
